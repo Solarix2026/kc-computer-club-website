@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
@@ -21,6 +22,7 @@ interface CommentSectionProps {
 }
 
 export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSectionProps) => {
+  const { user, isStudent } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,6 +32,14 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
   const [error, setError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // 当用户登录时，自动填充用户信息
+  useEffect(() => {
+    if (isStudent && user && !('role' in user)) {
+      setAuthorName(user.name);
+      setAuthorEmail(user.email);
+    }
+  }, [isStudent, user]);
 
   // 加载评论
   useEffect(() => {
@@ -112,7 +122,7 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
       } else {
         setError(data.error || '发布评论失败');
       }
-    } catch (_err) {
+    } catch {
       setError('网络错误，请重试');
     } finally {
       setIsSubmitting(false);
@@ -160,22 +170,22 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* 昵称和邮箱 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  placeholder="昵称 (必填)"
-                  value={authorName}
-                  onChange={(e) => setAuthorName(e.target.value)}
-                  disabled={isSubmitting}
-                />
-                <Input
-                  type="email"
-                  placeholder="邮箱 (可选)"
-                  value={authorEmail}
-                  onChange={(e) => setAuthorEmail(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              </div>
+              {/* 如果用户未登录，显示登录提示 */}
+              {!isStudent || !user ? (
+                <div className="bg-blue-500/10 border border-blue-500 text-blue-400 px-4 py-3 rounded-lg mb-4">
+                  <p className="text-sm font-medium">
+                    <span className="material-symbols-outlined text-sm align-middle mr-1">info</span>
+                    请先登录以发表评论
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-[#13ec80]/10 border border-[#13ec80] text-[#13ec80] px-4 py-3 rounded-lg mb-4">
+                  <p className="text-sm font-medium">
+                    <span className="material-symbols-outlined text-sm align-middle mr-1">verified_user</span>
+                    以 <span className="font-bold">{user.name}</span> ({user.email}) 的身份发表评论
+                  </p>
+                </div>
+              )}
 
               {/* 评论内容 */}
               <div>
@@ -183,7 +193,7 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
                   placeholder="写下你的评论... (最多500个字符)"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isStudent || !user}
                   maxLength={500}
                   rows={4}
                   className="w-full bg-[#162a21] text-white rounded-lg border border-[#283930] px-4 py-3 placeholder-[#9db9ab]/50 focus:outline-none focus:border-[#13ec80] focus:ring-1 focus:ring-[#13ec80]/20 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
@@ -198,9 +208,9 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
                 <Button
                   type="submit"
                   variant="primary"
-                  disabled={isSubmitting || !authorName.trim() || !content.trim()}
+                  disabled={isSubmitting || !content.trim() || !isStudent || !user}
                 >
-                  {isSubmitting ? '发布中...' : '发布评论'}
+                  {!isStudent || !user ? '请先登录' : isSubmitting ? '发布中...' : '发布评论'}
                 </Button>
               </div>
             </form>

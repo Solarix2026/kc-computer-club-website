@@ -39,6 +39,22 @@ export interface UpdateCommentInput {
 
 // Comment Service
 export const commentService = {
+  // Helper to map database document to Comment interface
+  private mapToComment(doc: any): Comment {
+    return {
+      $id: doc.$id,
+      targetType: doc.targetType,
+      targetId: doc.targetId,
+      targetTitle: doc.targetTitle,
+      authorName: doc.nickname || doc.authorName, // Support both field names
+      authorEmail: doc.authorEmail || '',
+      content: doc.content,
+      status: doc.status,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    };
+  },
+
   // Get all comments (optionally filtered by status)
   async getAllComments(onlyApproved: boolean = false): Promise<Comment[]> {
     try {
@@ -48,7 +64,7 @@ export const commentService = {
         'comments',
         queries
       );
-      return (response.documents as unknown as Comment[]) || [];
+      return (response.documents || []).map((doc: any) => this.mapToComment(doc));
     } catch (error) {
       console.error('Failed to fetch comments:', error);
       throw error;
@@ -63,7 +79,7 @@ export const commentService = {
         'comments',
         id
       );
-      return response as unknown as Comment;
+      return this.mapToComment(response);
     } catch (error) {
       console.error(`Failed to fetch comment ${id}:`, error);
       throw error;
@@ -81,7 +97,7 @@ export const commentService = {
           targetType: input.targetType,
           targetId: input.targetId,
           targetTitle: input.targetTitle || '',
-          authorName: input.authorName,
+          nickname: input.authorName,
           authorEmail: input.authorEmail || '',
           content: input.content,
           status: input.status || 'pending',
@@ -89,7 +105,7 @@ export const commentService = {
           updatedAt: new Date().toISOString(),
         }
       );
-      return response as unknown as Comment;
+      return this.mapToComment(response);
     } catch (error) {
       console.error('Failed to create comment:', error);
       throw error;
@@ -108,7 +124,7 @@ export const commentService = {
           updatedAt: new Date().toISOString(),
         }
       );
-      return response as unknown as Comment;
+      return this.mapToComment(response);
     } catch (error) {
       console.error(`Failed to update comment ${id}:`, error);
       throw error;

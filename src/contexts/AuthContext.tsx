@@ -53,9 +53,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
+        // 首先尝试从 localStorage 恢复学生会话
+        const savedStudentSession = localStorage.getItem('studentSession');
+        if (savedStudentSession) {
+          try {
+            const studentUser = JSON.parse(savedStudentSession) as StudentUser;
+            setUser(studentUser);
+            setIsLoading(false);
+            return;
+          } catch {
+            // localStorage 数据损坏，继续尝试 Appwrite
+            localStorage.removeItem('studentSession');
+          }
+        }
+
+        // 然后尝试 Appwrite session
         const sessionInfo = await checkSession();
         if (sessionInfo.user) {
           setUser(sessionInfo.user);
+          // 保存到 localStorage 作为备份
+          if (sessionInfo.type === 'student') {
+            localStorage.setItem('studentSession', JSON.stringify(sessionInfo.user));
+          }
         } else {
           setUser(null);
         }
@@ -75,6 +94,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const studentUser = await studentLogin(email, password);
       setUser(studentUser);
+      // 保存到 localStorage 作为备份
+      localStorage.setItem('studentSession', JSON.stringify(studentUser));
     } catch (err: unknown) {
       const error = err as Error & { message?: string };
       const errorMsg = error.message || '登录失败';
@@ -88,6 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const studentUser = await studentSignup(name, email, password);
       setUser(studentUser);
+      // 保存到 localStorage 作为备份
+      localStorage.setItem('studentSession', JSON.stringify(studentUser));
     } catch (err: unknown) {
       const error = err as Error & { message?: string };
       const errorMsg = error.message || '注册失败';
@@ -122,6 +145,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Logout error:', err);
     } finally {
       setUser(null);
+      // 清除保存的 session
+      localStorage.removeItem('studentSession');
+      localStorage.removeItem('adminSession');
     }
   };
 

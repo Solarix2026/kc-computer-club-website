@@ -102,6 +102,7 @@ export default function ForgotPasswordPage() {
                     maxLength={6}
                     className="flex-1 pl-10 pr-1 py-3 bg-transparent text-white placeholder-[#5a6b63] focus:outline-none"
                   />
+                  {/* eslint-disable-next-line tailwindcss/no-contradicting-classname */}
                   <span className="pl-1 pr-2 py-3 text-[#9db9ab] text-xs whitespace-nowrap shrink-0 border-l border-[#3a5047]">@kuencheng.edu.my</span>
                 </div>
               </div>

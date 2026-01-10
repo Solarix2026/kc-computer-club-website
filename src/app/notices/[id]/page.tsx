@@ -280,9 +280,10 @@ export default function NoticeDetailPage() {
     <div className="min-h-screen flex flex-col bg-[#102219]">
       <Header />
 
-      <main className="flex-1 w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
-        {/* 左侧：文章内容 */}
-        <article className="flex-1 max-w-200 mx-auto lg:mx-0">
+      <main className="flex-1 w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* 左侧：文章内容 */}
+          <article className="flex-1 max-w-200 mx-auto lg:mx-0">
           {/* 面包屑导航 */}
           <nav className="flex items-center text-sm text-[#9db9ab] mb-6 font-medium">
             <Link href="/" className="hover:text-[#13ec80] transition-colors">
@@ -465,9 +466,10 @@ export default function NoticeDetailPage() {
             </div>
           </div>
         </aside>
+        </div>
 
-        {/* 评论区 - 仅在大屏幕显示在主内容末尾 */}
-        <div className="lg:col-span-8">
+        {/* 评论区 - 跨越全宽，显示在底部 */}
+        <div className="w-full max-w-200 mx-auto lg:mx-0">
           <CommentSection targetType="notice" targetId={notice.$id} targetTitle={notice.title} />
         </div>
       </main>
