@@ -12,13 +12,13 @@ interface Activity {
   $id: string;
   id?: string;
   title: string;
-  date: string;
   startTime: string;
   endTime: string;
   location: string;
-  registered: number;
-  capacity: number;
-  status: 'published' | 'draft' | 'cancelled';
+  currentParticipants: number;
+  maxParticipants?: number;
+  signupDeadline: string;
+  status: 'published' | 'draft' | 'cancelled' | 'ongoing' | 'completed';
 }
 
 const statuses = ['全部', 'published', 'draft', 'cancelled'];
@@ -34,12 +34,12 @@ const mockActivities: Activity[] = [
     $id: '1',
     id: '1',
     title: 'Python 数据科学工作坊',
-    date: '2025-01-20',
-    startTime: '19:00',
-    endTime: '21:00',
+    startTime: '2025-01-20T19:00:00Z',
+    endTime: '2025-01-20T21:00:00Z',
     location: '教学楼 301',
-    registered: 24,
-    capacity: 40,
+    currentParticipants: 24,
+    maxParticipants: 40,
+    signupDeadline: '2025-01-15T23:59:00Z',
     status: 'published',
   },
 ];
@@ -105,7 +105,11 @@ export default function AdminActivities() {
           />
         </div>
         <Link href="/admin/activities/create">
-          <Button variant="primary" leftIcon="add">
+          <Button 
+            variant="primary" 
+            leftIcon="add"
+            className="!bg-[#137fec] !hover:bg-[#0f5fcc]"
+          >
             创建活动
           </Button>
         </Link>
@@ -149,7 +153,7 @@ export default function AdminActivities() {
         <div className="bg-[#1a2632] border border-[#283946] rounded-xl p-4">
           <p className="text-gray-400 text-sm mb-1">参与人数</p>
           <p className="text-2xl font-bold text-blue-400">
-            {activities.reduce((sum, a) => sum + a.registered, 0)}
+            {activities.reduce((sum, a) => sum + (a.currentParticipants || 0), 0)}
           </p>
         </div>
       </div>
@@ -202,17 +206,24 @@ export default function AdminActivities() {
                         <span className="material-symbols-outlined text-sm">
                           calendar_today
                         </span>
-                        {activity.date} {activity.startTime} - {activity.endTime}
+                        {new Date(activity.startTime).toLocaleDateString('zh-CN')} {new Date(activity.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <span className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm">location_on</span>
                         {activity.location}
                       </span>
                       {activity.status === 'published' && (
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-sm">group</span>
-                          {activity.registered}/{activity.capacity} 人已报名
-                        </span>
+                        <>
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">group</span>
+                            {activity.currentParticipants}/{activity.maxParticipants || '无限'} 人已报名
+                          </span>
+                          {activity.maxParticipants && (
+                            <span className="text-blue-400 font-medium">
+                              {Math.round((activity.currentParticipants / activity.maxParticipants) * 100)}%
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -244,7 +255,12 @@ export default function AdminActivities() {
             </span>
             <p className="text-gray-400 mb-4">没有找到活动</p>
             <Link href="/admin/activities/create">
-              <Button variant="primary">创建第一个活动</Button>
+              <Button 
+                variant="primary"
+                className="!bg-[#137fec] !hover:bg-[#0f5fcc]"
+              >
+                创建第一个活动
+              </Button>
             </Link>
           </div>
         )}

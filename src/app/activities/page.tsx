@@ -15,102 +15,80 @@ interface Activity {
   title: string;
   description: string;
   category: string;
-  date: string;
-  time: string;
+  startTime: string;
+  endTime: string;
+  signupDeadline: string;
   location: string;
-  instructor: string | null;
-  capacity: number;
-  registered: number;
+  organizer: string | null;
+  maxParticipants: number;
+  currentParticipants: number;
   status: string;
-  imageUrl: string;
+  coverImage: string;
   isPinned: boolean;
   [key: string]: unknown;
 }
 
 // 临时模拟数据
-const MOCK_ACTIVITIES = [
+const MOCK_ACTIVITIES: Activity[] = [
   {
     id: '1',
     title: 'Python 数据科学入门工作坊',
     description: '面向初学者的 Python 数据科学工作坊，学习 Pandas 和 NumPy 基础',
-    category: 'workshop',
-    date: '2024-01-24',
-    time: '下午 5:00',
+    category: '工作坊',
+    startTime: '2026-01-24T17:00:00Z',
+    endTime: '2026-01-24T19:00:00Z',
+    signupDeadline: '2026-01-23T23:59:00Z',
     location: '科学楼 304',
-    instructor: 'Dr. Sarah Jenkins',
-    capacity: 40,
-    registered: 24,
-    status: 'open',
-    imageUrl: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800&h=450&fit=crop',
+    organizer: 'Dr. Sarah Jenkins',
+    maxParticipants: 40,
+    currentParticipants: 24,
+    status: 'published',
+    coverImage: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800&h=450&fit=crop',
     isPinned: true,
   },
   {
     id: '2',
     title: 'LAN Party: Overwatch 2',
     description: '周五游戏之夜！带上你的设备来参加激动人心的 Overwatch 2 对战',
-    category: 'social',
-    date: '2024-01-28',
-    time: '晚上 7:00',
+    category: '其他',
+    startTime: '2026-01-28T19:00:00Z',
+    endTime: '2026-01-28T22:00:00Z',
+    signupDeadline: '2026-01-27T23:59:00Z',
     location: '学生活动中心',
-    instructor: null,
-    capacity: 50,
-    registered: 32,
-    status: 'open',
-    imageUrl: 'https://images.unsplash.com/photo-1493711662062-fa541f7f3d24?w=800&h=450&fit=crop',
+    organizer: null,
+    maxParticipants: 50,
+    currentParticipants: 32,
+    status: 'published',
+    coverImage: 'https://images.unsplash.com/photo-1493711662062-fa541f7f3d24?w=800&h=450&fit=crop',
     isPinned: false,
   },
   {
     id: '3',
     title: '网络安全基础讲座',
     description: '了解网络安全的基本概念，学习如何保护你的数字身份',
-    category: 'workshop',
-    date: '2024-02-05',
-    time: '下午 3:00',
+    category: '讲座',
+    startTime: '2026-02-05T15:00:00Z',
+    endTime: '2026-02-05T17:00:00Z',
+    signupDeadline: '2026-02-04T23:59:00Z',
     location: '图书馆报告厅',
-    instructor: 'Prof. Mike Chen',
-    capacity: 60,
-    registered: 45,
-    status: 'open',
-    imageUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=450&fit=crop',
-    isPinned: false,
-  },
-  {
-    id: '4',
-    title: '2024 全球黑客马拉松',
-    description: '48小时编程马拉松，挑战你的创造力和技术能力',
-    category: 'hackathon',
-    date: '2024-02-15',
-    time: '全天',
-    location: '创新中心',
-    instructor: null,
-    capacity: 200,
-    registered: 156,
-    status: 'open',
-    imageUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&h=450&fit=crop',
-    isPinned: true,
-  },
-  {
-    id: '5',
-    title: 'Web 开发训练营',
-    description: '为期一周的 Web 开发集训，从 HTML/CSS 到 React 全栈开发',
-    category: 'workshop',
-    date: '2024-02-20',
-    time: '每天下午 2:00',
-    location: '计算机实验室',
-    instructor: 'Alex Chen',
-    capacity: 30,
-    registered: 30,
-    status: 'closed',
-    imageUrl: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=450&fit=crop',
+    organizer: 'Prof. Mike Chen',
+    maxParticipants: 60,
+    currentParticipants: 45,
+    status: 'published',
+    coverImage: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=450&fit=crop',
     isPinned: false,
   },
 ];
 
 const CATEGORY_OPTIONS = [
   { value: 'all', label: '所有分类' },
-  { value: 'workshop', label: '工作坊' },
-  { value: 'hackathon', label: '黑客马拉松' },
-  { value: 'social', label: '社交活动' },
+  { value: '编程', label: '编程' },
+  { value: 'AI', label: 'AI' },
+  { value: '网页', label: '网页' },
+  { value: '比赛', label: '比赛' },
+  { value: '工作坊', label: '工作坊' },
+  { value: '讲座', label: '讲座' },
+  { value: '其他', label: '其他' },
 ];
 
 const STATUS_OPTIONS = [
@@ -120,9 +98,13 @@ const STATUS_OPTIONS = [
 ];
 
 const CATEGORY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  workshop: { bg: 'bg-blue-500/10', text: 'text-blue-400', label: '工作坊' },
-  hackathon: { bg: 'bg-purple-500/10', text: 'text-purple-400', label: '黑客马拉松' },
-  social: { bg: 'bg-amber-500/10', text: 'text-amber-400', label: '社交活动' },
+  '编程': { bg: 'bg-blue-500/10', text: 'text-blue-400', label: '编程' },
+  'AI': { bg: 'bg-purple-500/10', text: 'text-purple-400', label: 'AI' },
+  '网页': { bg: 'bg-cyan-500/10', text: 'text-cyan-400', label: '网页' },
+  '比赛': { bg: 'bg-red-500/10', text: 'text-red-400', label: '比赛' },
+  '工作坊': { bg: 'bg-amber-500/10', text: 'text-amber-400', label: '工作坊' },
+  '讲座': { bg: 'bg-green-500/10', text: 'text-green-400', label: '讲座' },
+  '其他': { bg: 'bg-gray-500/10', text: 'text-gray-400', label: '其他' },
 };
 
 export default function ActivitiesPage() {
@@ -140,28 +122,41 @@ export default function ActivitiesPage() {
         const response = await fetch('/api/activities?onlyPublished=true');
         const data = await response.json();
         
-        if (data.success && data.activities) {
-          setActivities(data.activities.map((activity: Record<string, unknown>) => ({
-            ...activity,
-            id: (activity as Record<string, unknown>).$id as string,
-            time: (activity as Record<string, unknown>).startTime as string,
-            status: (activity as Record<string, unknown>).status === 'published' ? 'open' : 'closed',
-          } as Activity)));
+        if (data.success && data.activities && data.activities.length > 0) {
+          const formattedActivities = data.activities.map((activity: Record<string, unknown>) => {
+            // 检查报名是否已截止
+            const signupDeadline = activity.signupDeadline as string;
+            const isDeadlinePassed = signupDeadline ? new Date(signupDeadline) < new Date() : false;
+            
+            return {
+              id: activity.$id as string,
+              title: activity.title as string,
+              description: activity.description as string,
+              category: activity.category as string || '其他',
+              startTime: activity.startTime as string,
+              endTime: activity.endTime as string,
+              signupDeadline: signupDeadline,
+              location: activity.location as string,
+              organizer: activity.organizer as string || null,
+              maxParticipants: (activity.maxParticipants as number) || 0,
+              currentParticipants: (activity.currentParticipants as number) || 0,
+              status: isDeadlinePassed ? 'closed' : 'open',
+              coverImage: (activity.coverImage as string) || 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800&h=450&fit=crop',
+              isPinned: false,
+            } as Activity;
+          });
+          setActivities(formattedActivities);
+          
+          // 默认选中第一个活动
+          if (formattedActivities.length > 0) {
+            setSelectedActivity(formattedActivities[0]);
+          }
         } else {
           setActivities(MOCK_ACTIVITIES);
-        }
-        // 默认选中第一个活动
-        setTimeout(() => {
-          if (data.activities && data.activities.length > 0) {
-            setSelectedActivity({
-              ...(data.activities[0] as Record<string, unknown>),
-              id: (data.activities[0] as Record<string, unknown>).$id as string,
-              time: (data.activities[0] as Record<string, unknown>).startTime as string,
-            } as Activity);
-          } else if (MOCK_ACTIVITIES.length > 0) {
+          if (MOCK_ACTIVITIES.length > 0) {
             setSelectedActivity(MOCK_ACTIVITIES[0]);
           }
-        }, 100);
+        }
       } catch (err) {
         console.error('加载活动失败:', err);
         setActivities(MOCK_ACTIVITIES);
@@ -250,7 +245,7 @@ export default function ActivitiesPage() {
 
               {filteredActivities.map((activity) => {
                 const isSelected = selectedActivity?.id === activity.id;
-                const categoryStyle = CATEGORY_STYLES[activity.category] || CATEGORY_STYLES.workshop;
+                const categoryStyle = CATEGORY_STYLES[activity.category] || CATEGORY_STYLES['其他'];
 
                 return (
                   <div
@@ -265,7 +260,7 @@ export default function ActivitiesPage() {
                     <div className="flex gap-4">
                       <div
                         className="bg-cover bg-center rounded-lg size-16 shrink-0"
-                        style={{ backgroundImage: `url(${activity.imageUrl})` }}
+                        style={{ backgroundImage: `url(${activity.coverImage})` }}
                       />
                       <div className="flex flex-col justify-center min-w-0">
                         <p
@@ -277,7 +272,7 @@ export default function ActivitiesPage() {
                         </p>
                         <p className="text-[#9db9ab] text-sm font-normal mt-1 flex items-center gap-1">
                           <span className="material-symbols-outlined text-[16px]">calendar_today</span>
-                          {activity.date}
+                          {new Date(activity.startTime).toLocaleDateString('zh-CN')}
                         </p>
                         <div className="mt-2 flex items-center gap-2">
                           <span
@@ -322,13 +317,44 @@ export default function ActivitiesPage() {
 
 // 活动详情组件
 interface ActivityDetailProps {
-  activity: (typeof MOCK_ACTIVITIES)[0];
+  activity: Activity;
 }
 
 function ActivityDetail({ activity }: ActivityDetailProps) {
-  // 分类样式供后续扩展使用
-  // const categoryStyle = CATEGORY_STYLES[activity.category] || CATEGORY_STYLES.workshop;
-  const capacityPercent = Math.round((activity.registered / activity.capacity) * 100);
+  // 分类样式
+  const categoryStyle = CATEGORY_STYLES[activity.category] || CATEGORY_STYLES['其他'];
+  
+  // 计算报名进度百分比
+  const capacityPercent = activity.maxParticipants > 0 
+    ? Math.round((activity.currentParticipants / activity.maxParticipants) * 100)
+    : 0;
+  
+  // 格式化日期时间
+  const formatDateTime = (isoString: string) => {
+    if (!isoString) return '未知';
+    const date = new Date(isoString);
+    return `${date.toLocaleDateString('zh-CN')} ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  // 检查截止日期
+  const getDeadlineStatus = () => {
+    if (!activity.signupDeadline) return { text: '未设置', color: 'text-gray-400' };
+    const deadline = new Date(activity.signupDeadline);
+    const now = new Date();
+    const daysRemaining = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysRemaining < 0) {
+      return { text: '已截止', color: 'text-red-400' };
+    } else if (daysRemaining === 0) {
+      return { text: '今天截止', color: 'text-amber-400' };
+    } else if (daysRemaining <= 3) {
+      return { text: `还剩 ${daysRemaining} 天`, color: 'text-amber-400' };
+    } else {
+      return { text: `还剩 ${daysRemaining} 天`, color: 'text-[#13ec80]' };
+    }
+  };
+
+  const deadlineStatus = getDeadlineStatus();
 
   return (
     <>
@@ -337,7 +363,7 @@ function ActivityDetail({ activity }: ActivityDetailProps) {
         {/* Hero 图片 */}
         <div
           className="h-48 md:h-64 w-full bg-cover bg-center relative"
-          style={{ backgroundImage: `url(${activity.imageUrl})` }}
+          style={{ backgroundImage: `url(${activity.coverImage})` }}
         >
           <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent flex items-end p-6">
             <div className="w-full">
@@ -351,9 +377,14 @@ function ActivityDetail({ activity }: ActivityDetailProps) {
                 >
                   {activity.status === 'open' ? '开放报名' : '已截止'}
                 </span>
-                <span className="px-3 py-1 rounded-full bg-black/50 text-white border border-white/20 text-xs font-medium backdrop-blur-sm">
-                  容量: {activity.registered}/{activity.capacity}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${categoryStyle.bg} ${categoryStyle.text}`}>
+                  {categoryStyle.label}
                 </span>
+                {activity.maxParticipants > 0 && (
+                  <span className="px-3 py-1 rounded-full bg-black/50 text-white border border-white/20 text-xs font-medium backdrop-blur-sm">
+                    容量: {activity.currentParticipants}/{activity.maxParticipants}
+                  </span>
+                )}
               </div>
               <h2 className="text-white text-2xl md:text-3xl font-bold tracking-tight">
                 {activity.title}
@@ -372,7 +403,7 @@ function ActivityDetail({ activity }: ActivityDetailProps) {
               <div>
                 <p className="text-xs text-[#9db9ab] font-medium uppercase">日期时间</p>
                 <p className="text-sm font-semibold text-white">
-                  {activity.date} • {activity.time}
+                  {formatDateTime(activity.startTime)}
                 </p>
               </div>
             </div>
@@ -385,36 +416,47 @@ function ActivityDetail({ activity }: ActivityDetailProps) {
                 <p className="text-sm font-semibold text-white">{activity.location}</p>
               </div>
             </div>
-            {activity.instructor && (
+            {activity.organizer && (
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-full bg-[#13ec80]/10 flex items-center justify-center text-[#13ec80]">
                   <span className="material-symbols-outlined">person</span>
                 </div>
                 <div>
-                  <p className="text-xs text-[#9db9ab] font-medium uppercase">讲师</p>
-                  <p className="text-sm font-semibold text-white">{activity.instructor}</p>
+                  <p className="text-xs text-[#9db9ab] font-medium uppercase">组织者</p>
+                  <p className="text-sm font-semibold text-white">{activity.organizer}</p>
                 </div>
               </div>
             )}
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-[#13ec80]/10 flex items-center justify-center text-[#13ec80]">
+                <span className="material-symbols-outlined">event</span>
+              </div>
+              <div>
+                <p className="text-xs text-[#9db9ab] font-medium uppercase">报名截止</p>
+                <p className={`text-sm font-semibold ${deadlineStatus.color}`}>{deadlineStatus.text}</p>
+              </div>
+            </div>
           </div>
 
           {/* 容量进度条 */}
-          <div className="mb-6">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#9db9ab]">报名进度</span>
-              <span className="text-white font-medium">
-                {activity.registered}/{activity.capacity} ({capacityPercent}%)
-              </span>
+          {activity.maxParticipants > 0 && (
+            <div className="mb-6">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-[#9db9ab]">报名进度</span>
+                <span className="text-white font-medium">
+                  {activity.currentParticipants}/{activity.maxParticipants} ({capacityPercent}%)
+                </span>
+              </div>
+              <div className="w-full h-2 bg-[#283930] rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    capacityPercent >= 100 ? 'bg-red-500' : 'bg-[#13ec80]'
+                  }`}
+                  style={{ width: `${Math.min(capacityPercent, 100)}%` }}
+                />
+              </div>
             </div>
-            <div className="w-full h-2 bg-[#283930] rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  capacityPercent >= 100 ? 'bg-red-500' : 'bg-[#13ec80]'
-                }`}
-                style={{ width: `${Math.min(capacityPercent, 100)}%` }}
-              />
-            </div>
-          </div>
+          )}
 
           {/* 描述内容 */}
           <div className="prose prose-sm prose-invert max-w-none text-gray-300">
@@ -427,7 +469,7 @@ function ActivityDetail({ activity }: ActivityDetailProps) {
               <li>如需取消报名，请提前24小时通知</li>
             </ul>
 
-            {activity.category === 'workshop' && (
+            {activity.category === '工作坊' && (
               <p className="mt-4 text-sm bg-amber-500/10 text-amber-200 p-3 rounded-lg border border-amber-500/20 flex items-start gap-2">
                 <span className="material-symbols-outlined text-lg">info</span>
                 <span>工作坊期间请保持安静，尊重讲师和其他参与者。</span>

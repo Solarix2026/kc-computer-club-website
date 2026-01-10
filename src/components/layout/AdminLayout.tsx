@@ -144,7 +144,7 @@ export function AdminLayout({
           <Button
             onClick={handleLogout}
             variant="ghost"
-            className="w-full justify-start gap-3 text-gray-400 hover:text-[#137fec]"
+            className="w-full justify-start gap-3 text-gray-400 hover:text-white hover:bg-[#0f5fcc]/20 transition-all"
             leftIcon="logout"
           >
             退出登录
@@ -154,7 +154,7 @@ export function AdminLayout({
           <Link href="/">
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-gray-400 hover:text-[#137fec] mt-1"
+              className="w-full justify-start gap-3 text-gray-400 hover:text-white hover:bg-[#0f5fcc]/20 transition-all mt-1"
               leftIcon="home"
             >
               返回前台

@@ -64,7 +64,9 @@ export const commentService = {
         'comments',
         queries
       );
-      return (response.documents || []).map(mapToComment);
+      const comments = (response.documents || []).map(mapToComment);
+      // 按createdAt降序排列，最新的在最前面
+      return comments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error('Failed to fetch comments:', error);
       throw error;
@@ -171,7 +173,9 @@ export const commentService = {
         'comments',
         queries
       );
-      return (response.documents || []).map(mapToComment);
+      const comments = (response.documents || []).map(mapToComment);
+      // 按createdAt降序排列，最新的在最前面
+      return comments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error(
         `Failed to fetch comments for ${targetType} ${targetId}:`,
@@ -189,7 +193,9 @@ export const commentService = {
         'comments',
         [Query.equal('status', status)]
       );
-      return (response.documents || []).map(mapToComment);
+      const comments = (response.documents || []).map(mapToComment);
+      // 按createdAt降序排列，最新的在最前面
+      return comments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error(`Failed to fetch comments with status ${status}:`, error);
       throw error;

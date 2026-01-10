@@ -13,16 +13,20 @@ export interface Activity {
   $id: string;
   title: string;
   description: string;
-  category: 'workshop' | 'hackathon' | 'social' | 'competition';
-  date: string; // ISO date
-  startTime: string; // HH:mm
-  endTime: string; // HH:mm
+  category: string;
+  startTime: string; // ISO datetime (YYYY-MM-DDTHH:mm:ss.sssZ)
+  endTime: string; // ISO datetime (YYYY-MM-DDTHH:mm:ss.sssZ)
   location: string;
-  capacity: number;
-  registered: number;
-  status: 'draft' | 'published' | 'cancelled' | 'completed';
-  instructor?: string;
-  imageUrl?: string;
+  maxParticipants?: number;
+  currentParticipants: number;
+  signupDeadline: string; // ISO datetime
+  signupFormFields: string; // JSON string of form fields
+  organizer: string;
+  organizerId: string;
+  status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
+  coverImage?: string;
+  allowedGrades?: string; // JSON string of allowed grades array
+  publishedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,29 +35,36 @@ export interface CreateActivityInput {
   title: string;
   description: string;
   category: string;
-  date: string;
-  startTime: string;
-  endTime: string;
+  startTime: string; // ISO datetime
+  endTime: string; // ISO datetime
   location: string;
-  capacity: number;
+  maxParticipants?: number;
+  currentParticipants?: number;
+  signupDeadline: string; // ISO datetime
+  signupFormFields?: string;
+  organizer: string;
+  organizerId: string;
   status: 'draft' | 'published';
-  instructor?: string;
-  imageUrl?: string;
+  coverImage?: string | null;
+  allowedGrades?: string | null; // JSON string of allowed grades array
 }
 
 export interface UpdateActivityInput {
   title?: string;
   description?: string;
   category?: string;
-  date?: string;
   startTime?: string;
   endTime?: string;
   location?: string;
-  capacity?: number;
-  registered?: number;
-  status?: 'draft' | 'published' | 'cancelled' | 'completed';
-  instructor?: string;
-  imageUrl?: string;
+  maxParticipants?: number;
+  currentParticipants?: number;
+  signupDeadline?: string;
+  signupFormFields?: string;
+  organizer?: string;
+  organizerId?: string;
+  status?: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
+  coverImage?: string | null;
+  allowedGrades?: (string | null);
 }
 
 // Activity Service
@@ -67,7 +78,9 @@ export const activityService = {
         'activities',
         queries
       );
-      return (response.documents as unknown as Activity[]) || [];
+      const activities = (response.documents as unknown as Activity[]) || [];
+      // 按createdAt降序排列，最新的在最前面
+      return activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error('Failed to fetch activities:', error);
       throw error;
@@ -100,15 +113,18 @@ export const activityService = {
           title: input.title,
           description: input.description,
           category: input.category,
-          date: input.date,
           startTime: input.startTime,
           endTime: input.endTime,
           location: input.location,
-          capacity: input.capacity,
-          registered: 0,
+          maxParticipants: input.maxParticipants || 0,
+          currentParticipants: input.currentParticipants || 0,
+          signupDeadline: input.signupDeadline,
+          signupFormFields: input.signupFormFields || JSON.stringify([]),
+          organizer: input.organizer,
+          organizerId: input.organizerId,
           status: input.status,
-          instructor: input.instructor || null,
-          imageUrl: input.imageUrl || null,
+          coverImage: input.coverImage || undefined,
+          allowedGrades: input.allowedGrades || undefined,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
@@ -176,7 +192,9 @@ export const activityService = {
         'activities',
         [Query.equal('category', category), Query.equal('status', 'published')]
       );
-      return (response.documents as unknown as Activity[]) || [];
+      const activities = (response.documents as unknown as Activity[]) || [];
+      // 按createdAt降序排列，最新的在最前面
+      return activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error(`Failed to fetch activities for category ${category}:`, error);
       throw error;
@@ -191,7 +209,9 @@ export const activityService = {
         'activities',
         [Query.equal('status', status)]
       );
-      return (response.documents as unknown as Activity[]) || [];
+      const activities = (response.documents as unknown as Activity[]) || [];
+      // 按createdAt降序排列，最新的在最前面
+      return activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error(`Failed to fetch activities with status ${status}:`, error);
       throw error;
@@ -201,37 +221,37 @@ export const activityService = {
   // Get upcoming activities (future dates)
   async getUpcomingActivities(): Promise<Activity[]> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toISOString();
       const allActivities = await this.getAllActivities(true);
-      return allActivities.filter((activity) => activity.date >= today);
+      return allActivities.filter((activity) => activity.startTime >= now);
     } catch (error) {
       console.error('Failed to fetch upcoming activities:', error);
       throw error;
     }
   },
 
-  // Increment registered count
+  // Increment participant count
   async incrementRegisteredCount(id: string): Promise<Activity> {
     try {
       const activity = await this.getActivityById(id);
       return this.updateActivity(id, {
-        registered: activity.registered + 1,
+        currentParticipants: activity.currentParticipants + 1,
       });
     } catch (error) {
-      console.error(`Failed to increment registered count for activity ${id}:`, error);
+      console.error(`Failed to increment participant count for activity ${id}:`, error);
       throw error;
     }
   },
 
-  // Decrement registered count
+  // Decrement participant count
   async decrementRegisteredCount(id: string): Promise<Activity> {
     try {
       const activity = await this.getActivityById(id);
       return this.updateActivity(id, {
-        registered: Math.max(0, activity.registered - 1),
+        currentParticipants: Math.max(0, activity.currentParticipants - 1),
       });
     } catch (error) {
-      console.error(`Failed to decrement registered count for activity ${id}:`, error);
+      console.error(`Failed to decrement participant count for activity ${id}:`, error);
       throw error;
     }
   },

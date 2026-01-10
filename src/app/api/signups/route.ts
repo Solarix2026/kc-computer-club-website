@@ -34,12 +34,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { activityId, activityTitle, studentName, studentEmail, studentId, major, year, formData } = body;
+    const { activityId, activityTitle, studentName, studentEmail, studentId, year, className, formData } = body;
 
     // 验证必填字段
-    if (!activityId || !studentName || !studentEmail) {
+    if (!activityId || !studentEmail) {
       return NextResponse.json(
-        { error: '缺少必填字段: activityId, studentName, studentEmail' },
+        { error: '缺少必填字段: activityId, studentEmail' },
         { status: 400 }
       );
     }
@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
       studentName,
       studentEmail,
       studentId,
-      major,
       year,
+      className,
       formData,
     };
 

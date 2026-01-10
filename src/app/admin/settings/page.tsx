@@ -197,6 +197,7 @@ export default function AdminSettings() {
             <Button
               onClick={handleSaveSettings}
               variant="primary"
+              className="!bg-[#137fec] !hover:bg-[#0f5fcc]"
               disabled={isSaving}
             >
               {isSaving ? '保存中...' : '保存更改'}
@@ -244,7 +245,10 @@ export default function AdminSettings() {
                 />
               </div>
             </div>
-            <Button className="mt-4" variant="primary">
+            <Button 
+              className="mt-4 !bg-[#137fec] !hover:bg-[#0f5fcc]" 
+              variant="primary"
+            >
               更新密码
             </Button>
           </div>
@@ -318,7 +322,12 @@ export default function AdminSettings() {
             </div>
 
             {/* 生成新密钥 */}
-            <Button variant="primary">生成新密钥</Button>
+            <Button 
+              variant="primary"
+              className="!bg-[#137fec] !hover:bg-[#0f5fcc]"
+            >
+              生成新密钥
+            </Button>
           </div>
 
           {/* Webhook 设置 */}
@@ -346,7 +355,10 @@ export default function AdminSettings() {
                 </div>
               </div>
             </div>
-            <Button className="mt-4" variant="primary">
+            <Button 
+              className="mt-4 !bg-[#137fec] !hover:bg-[#0f5fcc]" 
+              variant="primary"
+            >
               保存 Webhook
             </Button>
           </div>

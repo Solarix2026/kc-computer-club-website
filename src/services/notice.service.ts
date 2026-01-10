@@ -61,7 +61,9 @@ export async function getAllNotices(onlyPublished = false): Promise<Notice[]> {
       NOTICES_COLLECTION_ID,
       queries
     );
-    return response.documents.map(parseNotice) as unknown as Notice[];
+    const notices = response.documents.map(parseNotice) as unknown as Notice[];
+    // 按createdAt降序排列，最新的在最前面
+    return notices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
     console.error('获取公告列表失败:', err);
@@ -257,7 +259,9 @@ export async function getNoticesByCategory(category: string): Promise<Notice[]> 
       NOTICES_COLLECTION_ID,
       [Query.equal('category', category)]
     );
-    return response.documents.map(parseNotice) as unknown as Notice[];
+    const notices = response.documents.map(parseNotice) as unknown as Notice[];
+    // 按createdAt降序排列，最新的在最前面
+    return notices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
     console.error('按分类获取公告失败:', err);
@@ -275,7 +279,9 @@ export async function searchNotices(query: string): Promise<Notice[]> {
       NOTICES_COLLECTION_ID,
       [Query.search('title', query)]
     );
-    return response.documents.map(parseNotice) as unknown as Notice[];
+    const notices = response.documents.map(parseNotice) as unknown as Notice[];
+    // 按createdAt降序排列，最新的在最前面
+    return notices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
     console.error('搜索公告失败:', err);

@@ -209,7 +209,11 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#283946]">
               <h2 className="text-xl font-bold text-white">近期活动</h2>
               <Link href="/admin/activities">
-                <Button variant="primary" size="sm">
+                <Button 
+                  variant="primary" 
+                  size="sm"
+                  className="!bg-[#137fec] !hover:bg-[#0f5fcc]"
+                >
                   查看全部
                 </Button>
               </Link>

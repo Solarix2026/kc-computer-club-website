@@ -12,15 +12,13 @@ const databases = new Databases(client);
 export interface Signup {
   $id: string;
   activityId: string;
-  activityTitle?: string;
-  studentName: string;
-  studentEmail: string;
-  studentId?: string;
-  major?: string;
-  year?: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  signupDate: string;
-  formData?: Record<string, string>;
+  email: string;
+  formData: Record<string, string>;
+  phone?: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'attended';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateSignupInput {
@@ -29,19 +27,17 @@ export interface CreateSignupInput {
   studentName: string;
   studentEmail: string;
   studentId?: string;
-  major?: string;
   year?: string;
+  className?: string;
+  phone?: string;
   status?: 'pending' | 'confirmed';
   formData?: Record<string, string>;
 }
 
 export interface UpdateSignupInput {
-  studentName?: string;
-  studentEmail?: string;
-  studentId?: string;
-  major?: string;
-  year?: string;
-  status?: 'pending' | 'confirmed' | 'cancelled';
+  status?: 'pending' | 'confirmed' | 'cancelled' | 'attended';
+  phone?: string;
+  notes?: string;
   formData?: Record<string, string>;
 }
 
@@ -56,7 +52,9 @@ export const signupService = {
         'signups',
         queries
       );
-      return (response.documents as unknown as Signup[]) || [];
+      const signups = (response.documents as unknown as Signup[]) || [];
+      // 按createdAt降序排列，最新的在最前面
+      return signups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error('Failed to fetch signups:', error);
       throw error;
@@ -81,21 +79,30 @@ export const signupService = {
   // Create a new signup
   async createSignup(input: CreateSignupInput): Promise<Signup> {
     try {
+      // 准备 formData - 包含学生的所有信息
+      const formDataObj = {
+        studentName: input.studentName,
+        studentEmail: input.studentEmail,
+        studentId: input.studentId || '',
+        year: input.year || '',
+        className: input.className || '',
+        activityTitle: input.activityTitle || '',
+        ...input.formData,
+      };
+
       const response = await databases.createDocument(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         'signups',
         'unique()',
         {
           activityId: input.activityId,
-          activityTitle: input.activityTitle || '',
-          studentName: input.studentName,
-          studentEmail: input.studentEmail,
-          studentId: input.studentId || '',
-          major: input.major || '',
-          year: input.year || '',
+          email: input.studentEmail, // 使用数据库中的字段名
+          formData: JSON.stringify(formDataObj), // 将 formData 转为 JSON 字符串
           status: input.status || 'pending',
-          signupDate: new Date().toISOString(),
-          formData: input.formData || {},
+          phone: input.phone || '',
+          notes: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }
       );
       return response as unknown as Signup;
@@ -143,7 +150,9 @@ export const signupService = {
         'signups',
         [Query.equal('activityId', activityId)]
       );
-      return (response.documents as unknown as Signup[]) || [];
+      const signups = (response.documents as unknown as Signup[]) || [];
+      // 按createdAt降序排列，最新的在最前面
+      return signups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error(`Failed to fetch signups for activity ${activityId}:`, error);
       throw error;
@@ -158,7 +167,9 @@ export const signupService = {
         'signups',
         [Query.equal('status', status)]
       );
-      return (response.documents as unknown as Signup[]) || [];
+      const signups = (response.documents as unknown as Signup[]) || [];
+      // 按createdAt降序排列，最新的在最前面
+      return signups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error(`Failed to fetch signups with status ${status}:`, error);
       throw error;
@@ -170,7 +181,7 @@ export const signupService = {
     try {
       const allSignups = await this.getAllSignups();
       return allSignups.filter(
-        (signup) => signup.studentEmail.toLowerCase() === email.toLowerCase()
+        (signup) => signup.email.toLowerCase() === email.toLowerCase()
       );
     } catch (error) {
       console.error(`Failed to fetch signups for email ${email}:`, error);
@@ -184,9 +195,7 @@ export const signupService = {
       const allSignups = await this.getAllSignups();
       return allSignups.filter(
         (signup) =>
-          signup.studentName.toLowerCase().includes(query.toLowerCase()) ||
-          signup.studentEmail.toLowerCase().includes(query.toLowerCase()) ||
-          signup.activityTitle?.toLowerCase().includes(query.toLowerCase())
+          signup.email.toLowerCase().includes(query.toLowerCase())
       );
     } catch (error) {
       console.error('Failed to search signups:', error);
@@ -229,20 +238,33 @@ export const signupService = {
         '姓名',
         '邮箱',
         '学号',
-        '专业',
         '年级',
+        '班级',
         '状态',
         '报名时间',
       ];
-      const rows = signups.map((signup) => [
-        signup.studentName,
-        signup.studentEmail,
-        signup.studentId || '',
-        signup.major || '',
-        signup.year || '',
-        signup.status,
-        new Date(signup.signupDate).toLocaleDateString('zh-CN'),
-      ]);
+      const rows = signups.map((signup) => {
+        let formDataObj = {} as Record<string, string>;
+        try {
+          if (typeof signup.formData === 'string') {
+            formDataObj = JSON.parse(signup.formData);
+          } else {
+            formDataObj = signup.formData as Record<string, string>;
+          }
+        } catch (e) {
+          console.error('Failed to parse formData:', e);
+        }
+
+        return [
+          formDataObj.studentName || '',
+          signup.email,
+          formDataObj.studentId || '',
+          formDataObj.year || '',
+          formDataObj.className || '',
+          signup.status,
+          new Date(signup.createdAt).toLocaleDateString('zh-CN'),
+        ];
+      });
 
       // Combine header and rows
       const csvContent = [

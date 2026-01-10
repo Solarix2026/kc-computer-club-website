@@ -12,7 +12,8 @@
     "type-check": "tsc --noEmit",
     "setup:appwrite": "ts-node scripts/setup-appwrite.ts",
     "seed:appwrite": "ts-node scripts/seed-appwrite.ts",
-    "fix:attributes": "ts-node scripts/fix-attributes.ts"
+    "fix:attributes": "ts-node scripts/fix-attributes.ts",
+    "fix:grades": "ts-node scripts/add-allowed-grades.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
