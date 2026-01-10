@@ -45,9 +45,7 @@ export async function studentSignup(
       password,
       name
     );
-
     // 2. 创建临时会话以发送验证邮件（稍后会删除）
-    let verificationSent = false;
     try {
       // 创建临时会话
       await account.createEmailPasswordSession(email, password);
@@ -56,7 +54,7 @@ export async function studentSignup(
       await account.createVerification(
         `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email`
       );
-      verificationSent = true;
+      // Verification email sent successfully
       
       // 删除临时会话，强制用户必须验证邮件后再登录
       await account.deleteSession('current');
@@ -399,12 +397,19 @@ export async function adminLogin(
       }
     }
 
-    return {
+    const adminUser: AdminUser = {
       id: adminRecord.$id,
       email: adminRecord.username + '@admin.local',
       name: adminName,
       role: 'admin',
     };
+
+    // 6. 存储管理员会话到 localStorage（用于页面刷新后恢复）
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('adminSession', JSON.stringify(adminUser));
+    }
+
+    return adminUser;
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
     throw new Error(err.message || '管理员登录失败');
@@ -447,8 +452,10 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
  * 注意: 管理员用户没有 Appwrite Account 会话，只需清空本地存储
  */
 export async function adminLogout(): Promise<void> {
-  // 管理员登出只需要清空本地存储，不需要调用 Appwrite Account API
-  // 因为管理员认证是通过数据库中的 admins 表实现的，不使用 Appwrite Account
+  // 管理员登出：清空 localStorage 中的会话
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('adminSession');
+  }
   return Promise.resolve();
 }
 
@@ -461,60 +468,56 @@ export async function checkSession(): Promise<{
 }> {
   try {
     console.log('=== checkSession called ===');
-    const appwriteUser = await account.get();
-    console.log('appwriteUser found:', appwriteUser.email);
-
-    // 检查是否是管理员
+    
+    // 首先检查 localStorage 中是否有管理员会话
     try {
-      const adminRecords = await databases.listDocuments(
-        APPWRITE_DATABASE_ID,
-        ADMINS_COLLECTION_ID,
-        [Query.equal('email', appwriteUser.email)]
-      );
-
-      if (adminRecords.documents.length > 0) {
-        const adminRecord = adminRecords.documents[0];
-        console.log('Admin session restored');
+      const adminSession = localStorage.getItem('adminSession');
+      if (adminSession) {
+        const adminUser = JSON.parse(adminSession) as AdminUser;
+        console.log('Admin session restored from localStorage');
         return {
           type: 'admin',
-          user: {
-            id: adminRecord.$id,
-            email: adminRecord.email,
-            name: adminRecord.name,
-            role: 'admin',
-          },
+          user: adminUser,
         };
       }
-    } catch (adminError) {
-      console.warn('Admin check failed, continuing to student check:', (adminError as Error).message);
+    } catch (err) {
+      console.warn('Failed to restore admin session from localStorage:', (err as Error).message);
     }
 
-    // 检查是否是学生
+    // 检查 Appwrite 学生会话
     try {
-      const studentRecords = await databases.listDocuments(
-        APPWRITE_DATABASE_ID,
-        USERS_COLLECTION_ID,
-        [Query.equal('email', appwriteUser.email)]
-      );
+      const appwriteUser = await account.get();
+      console.log('appwriteUser found:', appwriteUser.email);
 
-      if (studentRecords.documents.length > 0) {
-        const studentRecord = studentRecords.documents[0];
-        console.log('Student session restored:', studentRecord.name);
-        return {
-          type: 'student',
-          user: {
-            id: studentRecord.$id,
-            email: studentRecord.email,
-            name: studentRecord.name,
-            createdAt: studentRecord.createdAt,
-          },
-        };
+      // 检查是否是学生
+      try {
+        const studentRecords = await databases.listDocuments(
+          APPWRITE_DATABASE_ID,
+          USERS_COLLECTION_ID,
+          [Query.equal('email', appwriteUser.email)]
+        );
+
+        if (studentRecords.documents.length > 0) {
+          const studentRecord = studentRecords.documents[0];
+          console.log('Student session restored:', studentRecord.name);
+          return {
+            type: 'student',
+            user: {
+              id: studentRecord.$id,
+              email: studentRecord.email,
+              name: studentRecord.name,
+              createdAt: studentRecord.createdAt,
+            },
+          };
+        }
+      } catch (studentError) {
+        console.warn('Student check failed:', (studentError as Error).message);
       }
-    } catch (studentError) {
-      console.warn('Student check failed:', (studentError as Error).message);
+    } catch (appwriteError) {
+      console.log('No Appwrite session:', (appwriteError as Error).message);
     }
 
-    console.log('No user record found');
+    console.log('No user session found');
     return { type: null, user: null };
   } catch (error) {
     console.log('=== checkSession error ===', (error as Error).message);

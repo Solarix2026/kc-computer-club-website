@@ -70,7 +70,7 @@ export default function CreateNotice() {
           authorId: user?.id || '',
           images: formData.images.length > 0 ? formData.images : undefined,
           tags: formData.tags
-            ? formData.tags.split(',').map(tag => tag.trim())
+            ? formData.tags.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag)
             : [],
         }),
       });
@@ -250,31 +250,32 @@ export default function CreateNotice() {
               <label className="block text-white font-semibold mb-3">
                 配图（最多 5 张）{formData.images.length > 0 && `(${formData.images.length}/5)`}
               </label>
+              <p className="text-gray-500 text-sm mb-4">建议图片大小：1200x600px 或 1920x1080px，支持 JPG、PNG 格式</p>
               
               {/* 上传类型选择 */}
               <div className="flex gap-3 mb-4">
                 <button
                   type="button"
                   onClick={() => setImageInputType('upload')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
                     imageInputType === 'upload'
                       ? 'bg-[#137fec] text-white'
                       : 'bg-[#1f2d39] text-gray-400 hover:text-white'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-sm mr-1 inline">upload</span>
+                  <span className="material-symbols-outlined text-sm">upload</span>
                   上传图片
                 </button>
                 <button
                   type="button"
                   onClick={() => setImageInputType('link')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
                     imageInputType === 'link'
                       ? 'bg-[#137fec] text-white'
                       : 'bg-[#1f2d39] text-gray-400 hover:text-white'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-sm mr-1 inline">link</span>
+                  <span className="material-symbols-outlined text-sm">link</span>
                   图片链接
                 </button>
               </div>
@@ -304,7 +305,7 @@ export default function CreateNotice() {
                 <div className="flex gap-2">
                   <input
                     type="url"
-                    value={newImageLink ?? ''}
+                    value={newImageLink}
                     onChange={(e) => setNewImageLink(e.target.value)}
                     placeholder="输入图片链接 URL"
                     className="flex-1 px-4 py-3 bg-[#141f2e] border border-[#283a4f] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
@@ -328,6 +329,7 @@ export default function CreateNotice() {
                   <div className="grid grid-cols-2 gap-2">
                     {formData.images.map((img, idx) => (
                       <div key={idx} className="relative group">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={img}
                           alt={`图片 ${idx + 1}`}
@@ -353,14 +355,14 @@ export default function CreateNotice() {
             {/* 标签 */}
             <div className="bg-[#1a2632] border border-[#283946] rounded-2xl p-6">
               <label htmlFor="tags" className="block text-white font-semibold mb-3">
-                标签（用逗号分隔）
+                标签（用逗号或中文逗号分隔）
               </label>
               <input
                 id="tags"
                 name="tags"
                 value={formData.tags}
                 onChange={handleChange}
-                placeholder="例如：重要, 新闻, 活动"
+                placeholder="例如：重要, 新闻, 活动 或 重要，新闻，活动"
                 className="w-full px-4 py-3 bg-[#141f2e] border border-[#283a4f] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
               />
             </div>
@@ -375,6 +377,7 @@ export default function CreateNotice() {
               {/* 图片预览 */}
               {formData.images.length > 0 && (
                 <div className="mb-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={formData.images[0]}
                     alt="预览"

@@ -546,6 +546,12 @@ kccompt/
       "description": "封面图片 URL"
     },
     {
+      "key": "images",
+      "type": "string",
+      "required": false,
+      "description": "图片列表（JSON 数组）- 支持多张图片"
+    },
+    {
       "key": "tags",
       "type": "string",
       "required": false,

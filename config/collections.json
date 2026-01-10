@@ -153,6 +153,12 @@
           "required": false
         },
         {
+          "key": "images",
+          "type": "string",
+          "required": false,
+          "size": 4096
+        },
+        {
           "key": "tags",
           "type": "string",
           "required": false,

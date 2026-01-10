@@ -122,7 +122,7 @@ export default function ChangePasswordPage() {
           {success ? (
             <div className="mb-6 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <div className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-green-400 text-5xl flex-shrink-0">
+                <span className="material-symbols-outlined text-green-400 text-5xl shrink-0">
                   check_circle
                 </span>
                 <div>

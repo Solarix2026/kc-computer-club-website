@@ -3,7 +3,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 
@@ -35,7 +35,7 @@ export default function EditAdminPage() {
   }, [user, isLoading, router]);
 
   // Load admin data
-  const loadAdminData = async () => {
+  const loadAdminData = useCallback(async () => {
     try {
       setLoadingAdmin(true);
       // 从 API 获取管理员信息
@@ -57,13 +57,13 @@ export default function EditAdminPage() {
     } finally {
       setLoadingAdmin(false);
     }
-  };
+  }, [adminId]);
 
   useEffect(() => {
     if (user && adminId) {
       loadAdminData();
     }
-  }, [user, adminId]); // loadAdminData removed - it's defined in this scope
+  }, [user, adminId, loadAdminData]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {

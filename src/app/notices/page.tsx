@@ -26,6 +26,8 @@ interface NormalizedNotice {
   $id?: string;
   content?: string;
   createdAt?: string;
+  images?: string[];
+  tags?: string[];
 }
 
 const MOCK_NOTICES: NormalizedNotice[] = [
@@ -128,14 +130,45 @@ export default function NoticesPage() {
         setIsLoading(true);
         const response = await fetch('/api/notices?onlyPublished=true');
         const data = await response.json();
-        if (data.success) {
-          // 规范化数据：将 $id 映射到 id，并添加 excerpt（来自 content 的前 150 字）
-          const normalizedNotices = data.notices.map((notice: NormalizedNotice) => ({
-            ...notice,
-            id: notice.$id,
-            excerpt: notice.content?.substring(0, 150) + '...' || '',
-            isPinned: false, // 数据库中没有这个字段，默认为 false
-          }));
+        if (data.success && data.notices) {
+          const normalizedNotices = data.notices.map((notice: Record<string, unknown>) => {
+            // 更强大的图像处理逻辑
+            let imageUrl = 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&h=450&fit=crop';
+            
+            // 尝试从 images 数组获取第一张图片（由 parseNotice 处理）
+            if (notice.images && Array.isArray(notice.images) && notice.images.length > 0) {
+              const firstImage = notice.images[0];
+              if (firstImage && typeof firstImage === 'string' && firstImage.trim().length > 0) {
+                imageUrl = firstImage.trim();
+              }
+            }
+            // 如果没有 images，尝试从 coverImage 获取（原始字段）
+            else if (notice.coverImage) {
+              try {
+                const parsed = JSON.parse(notice.coverImage as string);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  const first = parsed[0];
+                  if (first && typeof first === 'string' && first.trim().length > 0) {
+                    imageUrl = first.trim();
+                  }
+                }
+              } catch {
+                // coverImage 不是有效的 JSON，尝试直接作为 URL
+                if (typeof notice.coverImage === 'string' && notice.coverImage.trim().length > 0) {
+                  imageUrl = notice.coverImage.trim();
+                }
+              }
+            }
+            
+            return {
+              ...notice,
+              id: notice.$id,
+              excerpt: (typeof notice.content === 'string' ? notice.content.substring(0, 150) + '...' : ''),
+              imageUrl: imageUrl,
+              tags: Array.isArray(notice.tags) ? notice.tags : (notice.tags && typeof notice.tags === 'string' ? JSON.parse(notice.tags) : []),
+              isPinned: false,
+            };
+          });
           setNotices(normalizedNotices);
         }
       } catch (err) {
@@ -314,6 +347,17 @@ function NoticeCard({ notice, featured = false }: NoticeCardProps) {
               </span>
             </div>
 
+            {/* 标签 */}
+            {notice.tags && notice.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {notice.tags.map((tag, idx) => (
+                  <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#283946] text-[#9db9ab] border border-[#3a4d5c]">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
             <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#13ec80] transition-colors line-clamp-2">
               {notice.title}
             </h3>
@@ -368,6 +412,22 @@ function NoticeCard({ notice, featured = false }: NoticeCardProps) {
         <h3 className="text-base font-bold text-white mb-2 group-hover:text-[#13ec80] transition-colors line-clamp-2">
           {notice.title}
         </h3>
+
+        {/* 标签 */}
+        {notice.tags && notice.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {notice.tags.slice(0, 2).map((tag, idx) => (
+              <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#283946] text-[#9db9ab] border border-[#3a4d5c]">
+                {tag}
+              </span>
+            ))}
+            {notice.tags.length > 2 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#283946] text-[#9db9ab] border border-[#3a4d5c]">
+                +{notice.tags.length - 2}
+              </span>
+            )}
+          </div>
+        )}
 
         <p className="text-[#9db9ab] text-sm mb-4 line-clamp-2">
           {notice.excerpt}

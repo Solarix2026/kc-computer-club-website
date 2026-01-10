@@ -4,67 +4,22 @@
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Loading } from '@/components/ui/Loading';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Activity {
-  id: string;
+  $id: string;
+  id?: string;
   title: string;
   date: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   location: string;
-  attendees: number;
+  registered: number;
+  capacity: number;
   status: 'published' | 'draft' | 'cancelled';
 }
-
-// 模拟活动数据
-const mockActivities: Activity[] = [
-  {
-    id: '1',
-    title: 'Python 数据科学工作坊',
-    date: '2025-01-20',
-    time: '19:00-21:00',
-    location: '教学楼 301',
-    attendees: 24,
-    status: 'published',
-  },
-  {
-    id: '2',
-    title: 'Web 开发训练营',
-    date: '2025-01-22',
-    time: '18:30-20:30',
-    location: '创意中心 A01',
-    attendees: 32,
-    status: 'published',
-  },
-  {
-    id: '3',
-    title: 'AI 应用论坛',
-    date: '2025-02-01',
-    time: '19:00-21:00',
-    location: '学生中心',
-    attendees: 0,
-    status: 'draft',
-  },
-  {
-    id: '4',
-    title: '黑客马拉松 2025',
-    date: '2025-02-15',
-    time: '09:00-18:00',
-    location: '校园全区',
-    attendees: 0,
-    status: 'cancelled',
-  },
-  {
-    id: '5',
-    title: 'GIS 讲座',
-    date: '2024-12-28',
-    time: '19:00-21:00',
-    location: '教学楼 301',
-    attendees: 18,
-    status: 'published',
-  },
-];
 
 const statuses = ['全部', 'published', 'draft', 'cancelled'];
 const statusLabels: Record<string, string> = {
@@ -73,10 +28,54 @@ const statusLabels: Record<string, string> = {
   cancelled: '已取消',
 };
 
+// 模拟活动数据
+const mockActivities: Activity[] = [
+  {
+    $id: '1',
+    id: '1',
+    title: 'Python 数据科学工作坊',
+    date: '2025-01-20',
+    startTime: '19:00',
+    endTime: '21:00',
+    location: '教学楼 301',
+    registered: 24,
+    capacity: 40,
+    status: 'published',
+  },
+];
+
 export default function AdminActivities() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('全部');
-  const [activities] = useState(mockActivities);
+  const [activities, setActivities] = useState<Activity[]>(mockActivities);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadActivities = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/activities');
+        const data = await response.json();
+        
+        if (data.success && data.activities) {
+          const formatted = data.activities.map((a: Record<string, unknown>) => ({
+            ...a,
+            id: a.$id,
+          }));
+          setActivities(formatted);
+        } else {
+          setActivities(mockActivities);
+        }
+      } catch (err) {
+        console.error('加载活动失败:', err);
+        setActivities(mockActivities);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadActivities();
+  }, []);
 
   // 过滤活动
   const filteredActivities = activities.filter((activity) => {
@@ -151,14 +150,18 @@ export default function AdminActivities() {
         <div className="bg-[#1a2632] border border-[#283946] rounded-xl p-4">
           <p className="text-gray-400 text-sm mb-1">参与人数</p>
           <p className="text-2xl font-bold text-blue-400">
-            {activities.reduce((sum, a) => sum + a.attendees, 0)}
+            {activities.reduce((sum, a) => sum + a.registered, 0)}
           </p>
         </div>
       </div>
 
       {/* 活动列表 */}
       <div className="bg-[#1a2632] border border-[#283946] rounded-2xl overflow-hidden">
-        {filteredActivities.length > 0 ? (
+        {isLoading ? (
+          <div className="px-6 py-12 flex justify-center">
+            <Loading size="sm" text="加载活动中..." />
+          </div>
+        ) : filteredActivities.length > 0 ? (
           <div className="divide-y divide-[#283946]">
             {filteredActivities.map((activity) => {
               let statusBg = '';
@@ -200,7 +203,7 @@ export default function AdminActivities() {
                         <span className="material-symbols-outlined text-sm">
                           calendar_today
                         </span>
-                        {activity.date} {activity.time}
+                        {activity.date} {activity.startTime} - {activity.endTime}
                       </span>
                       <span className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm">location_on</span>
@@ -209,7 +212,7 @@ export default function AdminActivities() {
                       {activity.status === 'published' && (
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">group</span>
-                          {activity.attendees} 人已报名
+                          {activity.registered}/{activity.capacity} 人已报名
                         </span>
                       )}
                     </div>

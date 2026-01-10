@@ -99,7 +99,7 @@ export function ActivityCard({
         </div>
 
         {/* 日期标签 */}
-        <div className="absolute bottom-4 left-4 bg-[#111814] rounded-lg px-3 py-2 text-center min-w-[60px]">
+        <div className="absolute bottom-4 left-4 bg-[#111814] rounded-lg px-3 py-2 text-center min-w-[60px]">  
           <div className="text-xs text-gray-400 uppercase">{formattedDate}</div>
           <div className="text-sm font-bold text-white">{formattedTime}</div>
         </div>

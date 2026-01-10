@@ -10,6 +10,23 @@ import { Select } from '@/components/ui/Select';
 import { Loading } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/EmptyState';
 
+interface Activity {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  date: string;
+  time: string;
+  location: string;
+  instructor: string | null;
+  capacity: number;
+  registered: number;
+  status: string;
+  imageUrl: string;
+  isPinned: boolean;
+  [key: string]: unknown;
+}
+
 // 临时模拟数据
 const MOCK_ACTIVITIES = [
   {
@@ -109,23 +126,54 @@ const CATEGORY_STYLES: Record<string, { bg: string; text: string; label: string 
 };
 
 export default function ActivitiesPage() {
-  const [activities] = useState(MOCK_ACTIVITIES);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedActivity, setSelectedActivity] = useState<(typeof MOCK_ACTIVITIES)[0] | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
   useEffect(() => {
-    // 模拟加载
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      // 默认选中第一个活动
-      if (MOCK_ACTIVITIES.length > 0) {
-        setSelectedActivity(MOCK_ACTIVITIES[0]);
+    const loadActivities = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/activities?onlyPublished=true');
+        const data = await response.json();
+        
+        if (data.success && data.activities) {
+          setActivities(data.activities.map((activity: Record<string, unknown>) => ({
+            ...activity,
+            id: (activity as Record<string, unknown>).$id as string,
+            time: (activity as Record<string, unknown>).startTime as string,
+            status: (activity as Record<string, unknown>).status === 'published' ? 'open' : 'closed',
+          } as Activity)));
+        } else {
+          setActivities(MOCK_ACTIVITIES);
+        }
+        // 默认选中第一个活动
+        setTimeout(() => {
+          if (data.activities && data.activities.length > 0) {
+            setSelectedActivity({
+              ...(data.activities[0] as Record<string, unknown>),
+              id: (data.activities[0] as Record<string, unknown>).$id as string,
+              time: (data.activities[0] as Record<string, unknown>).startTime as string,
+            } as Activity);
+          } else if (MOCK_ACTIVITIES.length > 0) {
+            setSelectedActivity(MOCK_ACTIVITIES[0]);
+          }
+        }, 100);
+      } catch (err) {
+        console.error('加载活动失败:', err);
+        setActivities(MOCK_ACTIVITIES);
+        if (MOCK_ACTIVITIES.length > 0) {
+          setSelectedActivity(MOCK_ACTIVITIES[0]);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    }, 500);
-    return () => clearTimeout(timer);
+    };
+
+    loadActivities();
   }, []);
 
   // 过滤活动

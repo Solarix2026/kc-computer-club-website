@@ -59,11 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setUser(null);
         }
-        localStorage.removeItem('authUser');
       } catch (err) {
         console.error('Failed to check session:', err);
         setUser(null);
-        localStorage.removeItem('authUser');
       } finally {
         setIsLoading(false);
       }
@@ -77,7 +75,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const studentUser = await studentLogin(email, password);
       setUser(studentUser);
-      localStorage.removeItem('authUser');
     } catch (err: unknown) {
       const error = err as Error & { message?: string };
       const errorMsg = error.message || '登录失败';
@@ -91,7 +88,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const studentUser = await studentSignup(name, email, password);
       setUser(studentUser);
-      localStorage.removeItem('authUser');
     } catch (err: unknown) {
       const error = err as Error & { message?: string };
       const errorMsg = error.message || '注册失败';
@@ -105,7 +101,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const adminUser = await adminLogin(adminUsername, password);
       setUser(adminUser);
-      localStorage.removeItem('authUser');
     } catch (err: unknown) {
       const error = err as Error & { message?: string };
       const errorMsg = error.message || '管理员登录失败';
@@ -127,7 +122,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Logout error:', err);
     } finally {
       setUser(null);
-      localStorage.removeItem('authUser');
     }
   };
 

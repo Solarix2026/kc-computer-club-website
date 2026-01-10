@@ -144,13 +144,34 @@ export default function ActivityDetailPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // 模拟加载活动数据
-    const timer = setTimeout(() => {
-      const found = MOCK_ACTIVITIES.find((a) => a.id === params.id);
-      setActivity(found || null);
-      setIsLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
+    const loadActivity = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/activities/${params.id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          setActivity({
+            ...data.activity,
+            id: data.activity.$id,
+            time: data.activity.startTime,
+            whatYouLearn: data.activity.description?.split('。').filter(Boolean) || [],
+            requirements: '请携带笔记本电脑。',
+          });
+        } else {
+          const found = MOCK_ACTIVITIES.find((a) => a.id === params.id);
+          setActivity(found || null);
+        }
+      } catch (err) {
+        console.error('加载活动失败:', err);
+        const found = MOCK_ACTIVITIES.find((a) => a.id === params.id);
+        setActivity(found || null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadActivity();
   }, [params.id]);
 
   const validateForm = () => {
@@ -189,26 +210,54 @@ export default function ActivityDetailPage() {
 
     setIsSubmitting(true);
 
-    // 模拟提交
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch('/api/signups', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          activityId: params.id,
+          activityTitle: activity?.title,
+          studentName: formData.name,
+          studentEmail: formData.email,
+          studentId: formData.studentId,
+          year: formData.yearMajor,
+        }),
+      });
 
-    setIsSubmitting(false);
-    setToastType('success');
-    setToastMessage('报名成功！我们将通过邮件发送确认信息。');
-    setShowToast(true);
+      const data = await response.json();
 
-    // 重置表单
-    setFormData({
-      name: '',
-      studentId: '',
-      email: '',
-      yearMajor: '',
-    });
+      if (data.success) {
+        setToastType('success');
+        setToastMessage('报名成功！我们将通过邮件发送确认信息。');
+        setShowToast(true);
 
-    // 3秒后跳转
-    setTimeout(() => {
-      router.push('/activities');
-    }, 3000);
+        // 重置表单
+        setFormData({
+          name: '',
+          studentId: '',
+          email: '',
+          yearMajor: '',
+        });
+
+        // 3秒后跳转
+        setTimeout(() => {
+          router.push('/activities');
+        }, 3000);
+      } else {
+        setToastType('error');
+        setToastMessage(data.error || '报名失败，请重试');
+        setShowToast(true);
+      }
+    } catch (err) {
+      console.error('报名失败:', err);
+      setToastType('error');
+      setToastMessage('网络错误，请重试');
+      setShowToast(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {

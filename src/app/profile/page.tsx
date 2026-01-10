@@ -143,7 +143,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab('info')}
               className={`flex-1 py-4 px-6 font-medium transition-colors ${
                 activeTab === 'info'
-                  ? 'text-primary border-b-2 border-primary -mb-[2px]'
+                  ? 'text-primary border-b-2 border-primary -mb-0.5'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
               }`}
             >
@@ -156,7 +156,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab('password')}
               className={`flex-1 py-4 px-6 font-medium transition-colors ${
                 activeTab === 'password'
-                  ? 'text-primary border-b-2 border-primary -mb-[2px]'
+                  ? 'text-primary border-b-2 border-primary -mb-0.5'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
               }`}
             >

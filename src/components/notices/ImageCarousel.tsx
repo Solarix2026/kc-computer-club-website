@@ -32,6 +32,7 @@ export const ImageCarousel = ({ images, title, showThumbnails = true }: ImageCar
     <div className="space-y-3">
       {/* 主图显示 */}
       <div className="relative bg-[#1a2632] rounded-xl overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={images[currentIndex]}
           alt={`${title || '图片'} ${currentIndex + 1}`}
@@ -75,13 +76,14 @@ export const ImageCarousel = ({ images, title, showThumbnails = true }: ImageCar
             <button
               key={index}
               onClick={() => handleThumbnailClick(index)}
-              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+              className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                 currentIndex === index
                   ? 'border-[#137fec]'
                   : 'border-[#283946] hover:border-gray-500'
               }`}
               title={`第 ${index + 1} 张图片`}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={image}
                 alt={`缩略图 ${index + 1}`}

@@ -19,10 +19,10 @@ export default function StudentLoginPage() {
     e.preventDefault();
     setError('');
 
-    // Email format validation: xxxxx@kuencheng.edu.my (5 digits only)
-    const emailRegex = /^\d{5}@kuencheng\.edu\.my$/;
+    // Email format validation: xxxxx(5-6)@kuencheng.edu.my (5-6 digits)
+    const emailRegex = /^\d{5,6}@kuencheng\.edu\.my$/;
     if (!emailRegex.test(email)) {
-      setError('邮箱格式错误。请使用格式：5位数字@kuencheng.edu.my（例如：12345@kuencheng.edu.my）');
+      setError('邮箱格式错误。请使用格式：5-6位数字@kuencheng.edu.my（例如：12345@kuencheng.edu.my）');
       return;
     }
 
@@ -76,23 +76,24 @@ export default function StudentLoginPage() {
               <label className="block text-sm font-medium text-white mb-2">
                 学号邮箱
               </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9db9ab] material-symbols-outlined">
+              <div className="relative flex items-center bg-[#162a21] border border-[#283930] rounded-lg focus-within:border-[#13ec80] focus-within:ring-1 focus-within:ring-[#13ec80] transition-colors overflow-hidden">
+                <span className="absolute left-3 text-[#9db9ab] material-symbols-outlined">
                   mail
                 </span>
                 <input
-                  type="email"
-                  value={email}
+                  type="text"
+                  value={email.replace(/@kuencheng\.edu\.my$/, '')}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 5);
+                    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
                     setEmail(val ? `${val}@kuencheng.edu.my` : '');
                   }}
-                  placeholder="12345"
+                  placeholder="123456"
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-[#162a21] border border-[#283930] rounded-lg text-white placeholder-[#5a6b63] focus:outline-none focus:border-[#13ec80] focus:ring-1 focus:ring-[#13ec80] transition-colors"
+                  maxLength={6}
+                  className="flex-1 pl-10 pr-1 py-3 bg-transparent text-white placeholder-[#5a6b63] focus:outline-none"
                 />
+                <span className="pl-1 pr-2 py-3 text-[#9db9ab] text-xs whitespace-nowrap flex-shrink-0 border-l border-[#3a5047]">@kuencheng.edu.my</span>
               </div>
-              <p className="text-xs text-[#7a8f85] mt-1">自动添加 @kuencheng.edu.my</p>
             </div>
 
             {/* 密码输入 */}

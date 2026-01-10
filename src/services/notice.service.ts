@@ -87,11 +87,51 @@ export async function getNoticeById(id: string): Promise<Notice> {
  * 解析公告数据，将 JSON 字符串转换为数组
  */
 function parseNotice(doc: Record<string, unknown>): Notice {
+  // 解析 coverImage 字段中的图片数组
+  let images: string[] = [];
+  if (doc.coverImage) {
+    const coverImageStr = (doc.coverImage as string).trim();
+    if (coverImageStr && coverImageStr !== '[]') {
+      try {
+        const parsed = JSON.parse(coverImageStr);
+        if (Array.isArray(parsed)) {
+          // 过滤掉空字符串和无效 URL
+          images = parsed.filter((img: unknown) => {
+            return typeof img === 'string' && img.trim().length > 0;
+          });
+        } else if (typeof parsed === 'string' && parsed.trim().length > 0) {
+          images = [parsed.trim()];
+        }
+      } catch {
+        // 如果不是 JSON 数组，当作单个图片 URL
+        if (typeof doc.coverImage === 'string' && coverImageStr.length > 0) {
+          images = [coverImageStr];
+        }
+      }
+    }
+  }
+
+  // 解析 tags 字段
+  let tags: string[] = [];
+  if (doc.tags) {
+    const tagsStr = (doc.tags as string).trim();
+    if (tagsStr && tagsStr !== '[]') {
+      try {
+        const parsed = JSON.parse(tagsStr);
+        if (Array.isArray(parsed)) {
+          tags = parsed.filter((tag: unknown) => typeof tag === 'string' && tag.trim().length > 0);
+        }
+      } catch {
+        tags = [];
+      }
+    }
+  }
+
   return {
     ...doc,
-    images: doc.images ? (typeof doc.images === 'string' ? JSON.parse(doc.images as string) : doc.images) : [],
-    tags: doc.tags ? (typeof doc.tags === 'string' ? JSON.parse(doc.tags as string) : doc.tags) : [],
-  } as Notice;
+    images,
+    tags,
+  } as unknown as Notice;
 }
 
 /**
@@ -100,23 +140,31 @@ function parseNotice(doc: Record<string, unknown>): Notice {
 export async function createNotice(input: CreateNoticeInput): Promise<Notice> {
   try {
     const now = new Date().toISOString();
+    const noticeData: Record<string, unknown> = {
+      title: input.title,
+      content: input.content,
+      category: input.category || '其他',
+      author: input.author,
+      authorId: input.authorId,
+      status: input.status || 'draft',
+      tags: input.tags ? JSON.stringify(input.tags) : '[]',
+      publishedAt: input.status === 'published' ? now : null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    // 使用 coverImage 字段存储所有图片的 JSON 数组
+    if (input.images && input.images.length > 0) {
+      noticeData.coverImage = JSON.stringify(input.images);
+    } else {
+      noticeData.coverImage = '[]';
+    }
+
     const notice = await databases.createDocument(
       APPWRITE_DATABASE_ID,
       NOTICES_COLLECTION_ID,
       ID.unique(),
-      {
-        title: input.title,
-        content: input.content,
-        category: input.category,
-        author: input.author,
-        authorId: input.authorId,
-        status: input.status || 'draft',
-        images: input.images ? JSON.stringify(input.images) : '[]',
-        tags: input.tags ? JSON.stringify(input.tags) : '[]',
-        publishedAt: input.status === 'published' ? now : null,
-        createdAt: now,
-        updatedAt: now,
-      }
+      noticeData
     );
     return parseNotice(notice) as unknown as Notice;
   } catch (error: unknown) {
@@ -148,7 +196,16 @@ export async function updateNotice(
         updateData.publishedAt = now;
       }
     }
-    if (input.images !== undefined) updateData.images = input.images ? JSON.stringify(input.images) : '[]';
+    
+    // 处理图片：使用 coverImage 字段存储所有图片的 JSON 数组
+    if (input.images !== undefined) {
+      if (input.images && input.images.length > 0) {
+        updateData.coverImage = JSON.stringify(input.images);
+      } else {
+        updateData.coverImage = '[]';
+      }
+    }
+    
     if (input.tags) updateData.tags = JSON.stringify(input.tags);
 
     const notice = await databases.updateDocument(

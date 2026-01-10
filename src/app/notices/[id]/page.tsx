@@ -9,9 +9,10 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { ImageCarousel } from '@/components/notices/ImageCarousel';
+import { CommentSection } from '@/components/notices/CommentSection';
 import { Notice } from '@/services/notice.service';
 
-// 临时模拟数据
+/* 临时模拟数据 - 已禁用，使用数据库中的真实数据
 const MOCK_NOTICES = [
   {
     id: '1',
@@ -130,12 +131,13 @@ const MOCK_NOTICES = [
     ],
   },
 ];
+*/
 
-const RELATED_NOTICES = [
-  { id: '2', title: '服务器维护通知', date: '2024-01-12' },
-  { id: '3', title: 'Python 工作坊系列课程', date: '2024-01-10' },
-  { id: '4', title: '招募执行委员会成员', date: '2024-01-08' },
-];
+// const RELATED_NOTICES_DISABLED = [
+//   { id: '2', title: '服务器维护通知', date: '2024-01-12' },
+//   { id: '3', title: 'Python 工作坊系列课程', date: '2024-01-10' },
+//   { id: '4', title: '招募执行委员会成员', date: '2024-01-08' },
+// ];
 
 const TAG_STYLES: Record<string, { bg: string; text: string }> = {
   '公告': { bg: 'bg-primary/10', text: 'text-primary' },
@@ -146,12 +148,26 @@ const TAG_STYLES: Record<string, { bg: string; text: string }> = {
   '工作坊': { bg: 'bg-cyan-500/10', text: 'text-cyan-400' },
 };
 
+// 计算阅读时间
+function calculateReadingTime(content: string): number {
+  if (!content) return 1;
+  // 移除HTML标签
+  const text = content.replace(/<[^>]*>/g, '');
+  // 计算中文字数（每个字为1）+ 英文单词数（每个单词为1）
+  const chineseChars = text.match(/[\u4e00-\u9fa5]/g)?.length || 0;
+  const englishWords = text.match(/\b[a-zA-Z]+\b/g)?.length || 0;
+  // 假设平均阅读速度为中文300字/分钟，英文200字/分钟
+  const readingTime = Math.ceil((chineseChars / 300 + englishWords / 200) / 2);
+  return Math.max(1, readingTime);
+}
+
 export default function NoticeDetailPage() {
   const params = useParams();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [error, setError] = useState('');
+  const [relatedNotices, setRelatedNotices] = useState<Notice[]>([]);
 
   useEffect(() => {
     const loadNotice = async () => {
@@ -163,6 +179,40 @@ export default function NoticeDetailPage() {
 
         if (data.success) {
           setNotice(data.notice);
+          
+          // 加载相关公告（同一分类，最多3条）
+          try {
+            const relatedResponse = await fetch(`/api/notices?category=${data.notice.category}&limit=5`);
+            const relatedData = await relatedResponse.json();
+            if (relatedData.success && relatedData.notices) {
+              // 改进图像处理：确保所有相关公告都有有效的图像
+              const filtered = relatedData.notices
+                .filter((n: Notice) => n.$id !== params.id)
+                .map((n: Notice) => {
+                  const nWithCover = n as Notice & { coverImage?: string };
+                  return {
+                    ...n,
+                    // 增强图像处理
+                    images: Array.isArray(n.images) ? n.images : 
+                      (nWithCover.coverImage ? (
+                        Array.isArray(nWithCover.coverImage) ? nWithCover.coverImage :
+                        (typeof nWithCover.coverImage === 'string' ? (() => {
+                          try {
+                            const parsed = JSON.parse(nWithCover.coverImage);
+                            return Array.isArray(parsed) ? parsed : [nWithCover.coverImage];
+                          } catch {
+                            return [nWithCover.coverImage];
+                          }
+                        })() : [])
+                      ) : []),
+                  };
+                })
+                .slice(0, 3);
+              setRelatedNotices(filtered);
+            }
+          } catch (relatedErr) {
+            console.warn('Failed to load related notices:', relatedErr);
+          }
         } else {
           setError(data.error || '加载公告失败');
         }
@@ -269,7 +319,7 @@ export default function NoticeDetailPage() {
             </h1>
 
             {/* 元信息 */}
-            <div className="flex items-center gap-4 text-sm text-[#9db9ab]">
+            <div className="flex items-center gap-4 text-sm text-[#9db9ab] flex-wrap">
               <div className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[18px]">calendar_today</span>
                 <span>{new Date(notice.createdAt).toLocaleDateString('zh-CN')}</span>
@@ -278,6 +328,11 @@ export default function NoticeDetailPage() {
               <div className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[18px]">person</span>
                 <span>{notice.author}</span>
+              </div>
+              <span className="w-1 h-1 rounded-full bg-[#9db9ab]"></span>
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[18px]">schedule</span>
+                <span>{calculateReadingTime(notice.content)} 分钟阅读</span>
               </div>
             </div>
           </header>
@@ -298,7 +353,7 @@ export default function NoticeDetailPage() {
 
 
           {/* 底部互动区域 */}
-          <div className="flex items-center justify-between pt-8 border-t border-[#283930]">
+          <div className="flex items-center justify-between pt-8 border-t border-[#283930] flex-wrap gap-4">
             <Link
               href="/notices"
               className="inline-flex items-center gap-2 text-sm font-medium text-[#9db9ab] hover:text-[#13ec80] transition-colors"
@@ -306,25 +361,10 @@ export default function NoticeDetailPage() {
               <span className="material-symbols-outlined text-lg">arrow_back</span>
               返回公告列表
             </Link>
-            <div className="flex gap-2">
-              {/* Twitter 分享 */}
-              <button
-                aria-label="分享到 Twitter"
-                className="p-2 rounded-full text-[#9db9ab] hover:text-[#13ec80] hover:bg-[#13ec80]/10 transition-colors"
-                onClick={() =>
-                  window.open(
-                    `https://twitter.com/intent/tweet?text=${encodeURIComponent(notice.title)}&url=${encodeURIComponent(window.location.href)}`,
-                    '_blank'
-                  )
-                }
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                </svg>
-              </button>
+            <div className="flex gap-2 flex-wrap">
               {/* 复制链接 */}
               <button
-                aria-label="复制链接"
+                title="复制链接"
                 className={`p-2 rounded-full transition-colors ${
                   copySuccess
                     ? 'text-[#13ec80] bg-[#13ec80]/10'
@@ -333,16 +373,29 @@ export default function NoticeDetailPage() {
                 onClick={handleCopyLink}
               >
                 <span className="material-symbols-outlined text-[20px]">
-                  {copySuccess ? 'check' : 'link'}
+                  {copySuccess ? 'check_circle' : 'link'}
                 </span>
               </button>
+              
               {/* 打印 */}
               <button
-                aria-label="打印"
+                title="打印公告"
                 className="p-2 rounded-full text-[#9db9ab] hover:text-[#13ec80] hover:bg-[#13ec80]/10 transition-colors"
                 onClick={handlePrint}
               >
                 <span className="material-symbols-outlined text-[20px]">print</span>
+              </button>
+              
+              {/* 分享到微信 */}
+              <button
+                title="分享"
+                className="p-2 rounded-full text-[#9db9ab] hover:text-[#13ec80] hover:bg-[#13ec80]/10 transition-colors"
+                onClick={() => {
+                  // 可集成QR代码或分享弹窗
+                  alert('分享链接：' + window.location.href);
+                }}
+              >
+                <span className="material-symbols-outlined text-[20px]">share</span>
               </button>
             </div>
           </div>
@@ -357,19 +410,23 @@ export default function NoticeDetailPage() {
                 相关公告
               </h3>
               <div className="space-y-4">
-                {RELATED_NOTICES.filter((n) => n.id !== notice.$id)
-                  .slice(0, 3)
-                  .map((relatedNotice, index) => (
-                    <div key={relatedNotice.id}>
+                {relatedNotices.length > 0 ? (
+                  relatedNotices.map((relatedNotice, index) => (
+                    <div key={relatedNotice.$id}>
                       {index > 0 && <hr className="border-[#283930] mb-4" />}
-                      <Link href={`/notices/${relatedNotice.id}`} className="block group">
-                        <span className="text-xs text-[#13ec80] mb-1 block">{relatedNotice.date}</span>
+                      <Link href={`/notices/${relatedNotice.$id}`} className="block group">
+                        <span className="text-xs text-[#13ec80] mb-1 block">
+                          {new Date(relatedNotice.createdAt).toLocaleDateString('zh-CN')}
+                        </span>
                         <h4 className="text-sm font-bold text-white group-hover:text-[#13ec80] transition-colors line-clamp-2">
                           {relatedNotice.title}
                         </h4>
                       </Link>
                     </div>
-                  ))}
+                  ))
+                ) : (
+                  <p className="text-xs text-[#9db9ab]">暂无相关公告</p>
+                )}
               </div>
               <Link
                 href="/notices"
@@ -408,6 +465,11 @@ export default function NoticeDetailPage() {
             </div>
           </div>
         </aside>
+
+        {/* 评论区 - 仅在大屏幕显示在主内容末尾 */}
+        <div className="lg:col-span-8">
+          <CommentSection targetType="notice" targetId={notice.$id} targetTitle={notice.title} />
+        </div>
       </main>
 
       <Footer />
