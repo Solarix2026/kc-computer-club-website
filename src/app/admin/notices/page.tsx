@@ -100,16 +100,16 @@ export default function AdminNoticesPage() {
 
   return (
     <AdminLayout adminName={user?.name || '管理员'}>
-      <div className="max-w-6xl">
+      <div className="w-full">
         {/* 页面头部 */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">公告管理</h1>
-            <p className="text-gray-400">管理社团的所有公告信息</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">公告管理</h1>
+            <p className="text-gray-400 text-sm">管理社团的所有公告信息</p>
           </div>
           <Link
             href="/admin/notices/create"
-            className="px-4 py-2 bg-[#137fec] text-white rounded-lg hover:bg-[#0f6ecf] transition-colors flex items-center gap-2"
+            className="w-full sm:w-auto px-4 py-2 bg-[#137fec] text-white rounded-lg hover:bg-[#0f6ecf] transition-colors flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined">add</span>
             新建公告
@@ -117,7 +117,7 @@ export default function AdminNoticesPage() {
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <div className="bg-[#1a2838] rounded-2xl border border-[#283a4f] p-6">
             <p className="text-gray-400 text-sm mb-1">总公告数</p>
             <p className="text-3xl font-bold text-white">{notices.length}</p>
@@ -137,8 +137,8 @@ export default function AdminNoticesPage() {
         </div>
 
         {/* 搜索和过滤 */}
-        <div className="bg-[#1a2838] rounded-2xl border border-[#283a4f] p-6 mb-6">
-          <div className="flex gap-4">
+        <div className="bg-[#1a2838] rounded-2xl border border-[#283a4f] p-4 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
             <input
               type="text"
               placeholder="搜索公告..."
@@ -185,13 +185,13 @@ export default function AdminNoticesPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#283a4f] bg-[#141f2e]">
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">
+                    <th className="px-4 sm:px-6 py-4 text-left font-semibold text-gray-400">
                       标题
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">
+                    <th className="hidden sm:table-cell px-6 py-4 text-left font-semibold text-gray-400">
                       分类
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">

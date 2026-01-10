@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
 
 // ========================================
 // AdminLayout 组件
@@ -41,9 +42,13 @@ export function AdminLayout({
   adminName = 'Admin',
   className,
 }: AdminLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  
+  // Use actual logged-in user name if available
+  const displayName = user?.name || adminName;
 
   const handleLogout = async () => {
     await logout();
@@ -52,17 +57,27 @@ export function AdminLayout({
 
   return (
     <div className={cn('flex min-h-screen bg-[#111814]', className)}>
-      {/* 侧边栏 */}
+      {/* 移动端侧边栏遮罩 */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* 侧边栏 - 桌面上固定显示，手机上可切换 */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-screen w-64',
+          'fixed lg:fixed left-0 top-0 h-screen w-64',
           'bg-[#162a21] border-r border-[#283930]',
-          'flex flex-col',
-          'z-40'
+          'flex-col',
+          'z-40',
+          'transition-transform duration-300 ease-in-out',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         {/* Logo */}
-        <div className="h-16 px-6 flex items-center border-b border-[#283930]">
+        <div className="h-16 px-6 flex items-center justify-between border-b border-[#283930]">
           <Link href="/admin" className="flex items-center gap-3">
             <div className="size-8 rounded-lg bg-[#137fec]/20 flex items-center justify-center">
               <span className="material-symbols-outlined text-[#137fec] text-lg">
@@ -71,6 +86,13 @@ export function AdminLayout({
             </div>
             <span className="font-bold text-white text-lg">管理后台</span>
           </Link>
+          {/* 手机端关闭按钮 */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden text-gray-400 hover:text-white transition-colors"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
         </div>
 
         {/* 导航菜单 */}
@@ -83,6 +105,7 @@ export function AdminLayout({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setSidebarOpen(false)}
                 className={cn(
                   'flex items-center gap-3 px-4 py-3 rounded-xl',
                   'text-sm font-medium transition-all duration-200',
@@ -111,7 +134,7 @@ export function AdminLayout({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">
-                {adminName}
+                {displayName}
               </p>
               <p className="text-xs text-gray-500">管理员</p>
             </div>
@@ -121,7 +144,7 @@ export function AdminLayout({
           <Button
             onClick={handleLogout}
             variant="ghost"
-            className="w-full justify-start gap-3 text-gray-400 hover:text-red-400"
+            className="w-full justify-start gap-3 text-gray-400 hover:text-[#137fec]"
             leftIcon="logout"
           >
             退出登录
@@ -131,7 +154,7 @@ export function AdminLayout({
           <Link href="/">
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-gray-400 mt-1"
+              className="w-full justify-start gap-3 text-gray-400 hover:text-[#137fec] mt-1"
               leftIcon="home"
             >
               返回前台
@@ -141,30 +164,41 @@ export function AdminLayout({
       </aside>
 
       {/* 主内容区域 */}
-      <main className="flex-1 ml-64">
+      <main className="flex-1 lg:ml-64">
         {/* 顶部导航栏 */}
         <header
           className={cn(
             'sticky top-0 z-30 h-16',
             'bg-[#111814]/80 backdrop-blur-md',
             'border-b border-[#283930]',
-            'flex items-center justify-between px-6'
+            'flex items-center justify-between px-4 sm:px-6'
           )}
         >
-          {/* 面包屑 - 可以由子组件提供 */}
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Link href="/admin" className="hover:text-white transition-colors">
-              首页
-            </Link>
-            <span className="material-symbols-outlined text-xs">
-              chevron_right
-            </span>
-            <span className="text-white">
-              {navItems.find((item) => 
-                pathname === item.href || 
-                (item.href !== '/admin' && pathname.startsWith(item.href))
-              )?.label || '仪表盘'}
-            </span>
+          {/* 左侧 - 汉堡菜单 + 面包屑 */}
+          <div className="flex items-center gap-4">
+            {/* 手机端菜单按钮 */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden text-gray-400 hover:text-white transition-colors"
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+
+            {/* 面包屑 */}
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <Link href="/admin" className="hover:text-white transition-colors">
+                首页
+              </Link>
+              <span className="material-symbols-outlined text-xs">
+                chevron_right
+              </span>
+              <span className="text-white">
+                {navItems.find((item) => 
+                  pathname === item.href || 
+                  (item.href !== '/admin' && pathname.startsWith(item.href))
+                )?.label || '仪表盘'}
+              </span>
+            </div>
           </div>
 
           {/* 右侧操作区域 */}
@@ -200,7 +234,7 @@ export function AdminLayout({
         </header>
 
         {/* 页面内容 */}
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </main>
     </div>
   );

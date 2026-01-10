@@ -105,8 +105,7 @@ export default function AdminActivities() {
           />
         </div>
         <Link href="/admin/activities/create">
-          <Button variant="primary">
-            <span className="material-symbols-outlined">add</span>
+          <Button variant="primary" leftIcon="add">
             创建活动
           </Button>
         </Link>
@@ -226,7 +225,7 @@ export default function AdminActivities() {
                       </button>
                     </Link>
                     <Link href={`/admin/activities/${activity.id}/signups`}>
-                      <button className="p-2 hover:bg-[#283946] rounded-lg text-gray-400 hover:text-green-400 transition-colors">
+                      <button className="p-2 hover:bg-[#283946] rounded-lg text-gray-400 hover:text-[#137fec] transition-colors">
                         <span className="material-symbols-outlined">group</span>
                       </button>
                     </Link>

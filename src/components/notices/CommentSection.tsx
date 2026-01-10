@@ -13,6 +13,7 @@ interface Comment {
   content: string;
   createdAt: string;
   status: string;
+  authorEmail?: string;
 }
 
 interface CommentSectionProps {
@@ -32,6 +33,9 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
   const [error, setError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
 
   // 当用户登录时，自动填充用户信息
   useEffect(() => {
@@ -62,6 +66,84 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
 
     loadComments();
   }, [targetType, targetId]);
+
+  // 检查是否在5分钟内
+  const isWithin5Minutes = (createdAt: string) => {
+    const created = new Date(createdAt).getTime();
+    const now = new Date().getTime();
+    return (now - created) < 5 * 60 * 1000; // 5 minutes in milliseconds
+  };
+
+  // 检查是否是评论作者
+  const isCommentAuthor = (comment: Comment) => {
+    return isStudent && user && user.email === comment.authorEmail;
+  };
+
+  const handleEditComment = async (commentId: string, newContent: string) => {
+    if (!newContent.trim()) {
+      setError('评论内容不能为空');
+      return;
+    }
+
+    setIsEditSubmitting(true);
+    try {
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: newContent.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setEditingId(null);
+        setEditContent('');
+        // 刷新评论列表
+        const listResponse = await fetch(
+          `/api/comments?targetType=${targetType}&targetId=${targetId}&onlyApproved=true`
+        );
+        const listData = await listResponse.json();
+        if (listData.success) {
+          setComments(listData.comments || []);
+        }
+      } else {
+        setError(data.error || '编辑评论失败');
+      }
+    } catch {
+      setError('网络错误，请重试');
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('确定要删除这条评论吗？')) return;
+
+    try {
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 刷新评论列表
+        const listResponse = await fetch(
+          `/api/comments?targetType=${targetType}&targetId=${targetId}&onlyApproved=true`
+        );
+        const listData = await listResponse.json();
+        if (listData.success) {
+          setComments(listData.comments || []);
+        }
+      } else {
+        setError(data.error || '删除评论失败');
+      }
+    } catch {
+      setError('网络错误，请重试');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,9 +186,12 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
 
       if (data.success) {
         setSubmitSuccess(true);
-        setAuthorName('');
-        setAuthorEmail('');
         setContent('');
+        // Keep authorName and authorEmail for next comment if user is logged in
+        if (!isStudent || !user) {
+          setAuthorName('');
+          setAuthorEmail('');
+        }
 
         // 刷新评论列表
         const listResponse = await fetch(
@@ -159,7 +244,7 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
 
             {submitSuccess && (
               <div className="bg-[#13ec80]/10 border border-[#13ec80] text-[#13ec80] px-4 py-3 rounded-lg mb-4">
-                <p className="text-sm font-medium">评论已发布，等待管理员审批后将显示</p>
+                <p className="text-sm font-medium">评论已发布</p>
               </div>
             )}
 
@@ -223,22 +308,76 @@ export const CommentSection = ({ targetType, targetId, targetTitle }: CommentSec
             </div>
           ) : comments.length > 0 ? (
             <div className="space-y-4">
-              {comments.map((comment) => (
-                <div
-                  key={comment.$id}
-                  className="bg-[#1A2C23] rounded-lg border border-[#283930] p-4"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="font-bold text-white">{comment.authorName}</p>
-                    <span className="text-xs text-[#9db9ab]">
-                      {new Date(comment.createdAt).toLocaleDateString('zh-CN')}
-                    </span>
+              {comments.map((comment) => {
+                const canEditDelete = isCommentAuthor(comment) && isWithin5Minutes(comment.createdAt);
+                return (
+                  <div
+                    key={comment.$id}
+                    className="bg-[#1A2C23] rounded-lg border border-[#283930] p-4"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="font-bold text-white">{comment.authorName}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[#9db9ab]">
+                          {new Date(comment.createdAt).toLocaleDateString('zh-CN')}
+                        </span>
+                        {canEditDelete && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingId(comment.$id);
+                                setEditContent(comment.content);
+                              }}
+                              className="text-xs px-2 py-1 text-[#13ec80] hover:bg-[#13ec80]/10 rounded transition-colors"
+                            >
+                              编辑
+                            </button>
+                            <button
+                              onClick={() => handleDeleteComment(comment.$id)}
+                              className="text-xs px-2 py-1 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                            >
+                              删除
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {editingId === comment.$id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          maxLength={500}
+                          rows={3}
+                          className="w-full bg-[#162a21] text-white rounded-lg border border-[#283930] px-3 py-2 placeholder-[#9db9ab]/50 focus:outline-none focus:border-[#13ec80] focus:ring-1 focus:ring-[#13ec80]/20 resize-none"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() => {
+                              setEditingId(null);
+                              setEditContent('');
+                            }}
+                            className="text-xs px-3 py-1 text-gray-400 hover:text-white rounded transition-colors"
+                          >
+                            取消
+                          </button>
+                          <button
+                            onClick={() => handleEditComment(comment.$id, editContent)}
+                            disabled={isEditSubmitting}
+                            className="text-xs px-3 py-1 bg-[#13ec80]/20 text-[#13ec80] hover:bg-[#13ec80]/30 rounded transition-colors disabled:opacity-50"
+                          >
+                            {isEditSubmitting ? '保存中...' : '保存'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[#E0E0E0] leading-relaxed">
+                        {comment.content}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-[#E0E0E0] leading-relaxed">
-                    {comment.content}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12">
