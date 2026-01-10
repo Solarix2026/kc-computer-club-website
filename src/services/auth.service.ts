@@ -14,6 +14,22 @@ const USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION ||
 const ADMINS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_ADMINS_COLLECTION || '';
 
 /**
+ * 获取应用的完整 URL
+ * 优先使用环境变量，其次使用 window.location 的当前域名
+ */
+function getAppUrl(): string {
+  // 如果在服务器端，使用环境变量
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  }
+  
+  // 如果在浏览器端，使用当前域名
+  const protocol = window.location.protocol;
+  const host = window.location.host;
+  return `${protocol}//${host}`;
+}
+
+/**
  * 验证中文姓名（2-4个汉字）
  */
 export function validateChineseName(name: string): boolean {
@@ -52,7 +68,7 @@ export async function studentSignup(
       
       // 发送验证邮件
       await account.createVerification(
-        `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email`
+        `${getAppUrl()}/auth/verify-email`
       );
       // Verification email sent successfully
       
@@ -209,10 +225,15 @@ export async function getCurrentStudent(): Promise<StudentUser | null> {
  */
 export async function studentLogout(): Promise<void> {
   try {
-    // 删除所有会话
+    // 删除当前会话
     await account.deleteSession('current');
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
+    // 忽略"no session"错误，因为目标是确保用户已登出
+    if (err.message?.includes('missing scopes') || err.message?.includes('Session') || err.message?.includes('not found')) {
+      // 用户已经没有活跃会话，这是预期的
+      return;
+    }
     throw new Error(err.message || '登出失败');
   }
 }
@@ -223,7 +244,7 @@ export async function studentLogout(): Promise<void> {
 export async function sendVerificationEmail(): Promise<void> {
   try {
     await account.createVerification(
-      `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email`
+      `${getAppUrl()}/auth/verify-email`
     );
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
@@ -287,7 +308,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     // Appwrite 会发送密码重置邮件
     await account.createRecovery(
       email,
-      `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`
+      `${getAppUrl()}/auth/reset-password`
     );
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
