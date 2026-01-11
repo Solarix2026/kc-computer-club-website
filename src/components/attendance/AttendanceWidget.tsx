@@ -234,15 +234,31 @@ export default function AttendanceWidget({
               <span className="material-symbols-outlined text-[#8a9e94] text-4xl mb-3">schedule</span>
               <p className="text-white font-medium mb-2">当前不在点名时间</p>
               <div className="text-[#8a9e94] text-sm space-y-1">
-                <p>点名时间：每周二</p>
-                <div className="flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-[#13ec80] text-sm">location_on</span>
-                  <span>15:20-15:25</span>
-                </div>
-                <div className="flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-[#13ec80] text-sm">location_on</span>
-                  <span>16:35-16:40</span>
-                </div>
+                {status.config ? (
+                  <>
+                    <p>点名时间：{['周日', '周一', '周二', '周三', '周四', '周五', '周六'][status.config.dayOfWeek]}</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="material-symbols-outlined text-[#13ec80] text-sm">location_on</span>
+                      <span>
+                        {String(status.config.session1Start.hour).padStart(2, '0')}:
+                        {String(status.config.session1Start.minute).padStart(2, '0')}-
+                        {String(status.config.session1Start.hour).padStart(2, '0')}:
+                        {String(status.config.session1Start.minute + status.config.session1Duration).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="material-symbols-outlined text-[#13ec80] text-sm">location_on</span>
+                      <span>
+                        {String(status.config.session2Start.hour).padStart(2, '0')}:
+                        {String(status.config.session2Start.minute).padStart(2, '0')}-
+                        {String(status.config.session2Start.hour).padStart(2, '0')}:
+                        {String(status.config.session2Start.minute + status.config.session2Duration).padStart(2, '0')}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <p>加载点名时间中...</p>
+                )}
               </div>
             </div>
           )}

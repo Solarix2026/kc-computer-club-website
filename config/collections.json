@@ -689,6 +689,157 @@
           "type": "key"
         }
       ]
+    },
+    {
+      "id": "clubSettings",
+      "name": "社团设置表",
+      "description": "社团系统设置（关于信息、点名配置等）",
+      "attributes": [
+        {
+          "key": "aboutTitle",
+          "type": "string",
+          "required": false,
+          "size": 256,
+          "description": "关于我们 - 标题"
+        },
+        {
+          "key": "aboutDescription",
+          "type": "string",
+          "required": false,
+          "size": 4096,
+          "description": "关于我们 - 描述"
+        },
+        {
+          "key": "aboutEmail",
+          "type": "email",
+          "required": false,
+          "description": "关于我们 - 邮箱"
+        },
+        {
+          "key": "aboutLocation",
+          "type": "string",
+          "required": false,
+          "size": 512,
+          "description": "关于我们 - 地点"
+        },
+        {
+          "key": "aboutMeetingTime",
+          "type": "string",
+          "required": false,
+          "size": 256,
+          "description": "关于我们 - 聚会时间"
+        },
+        {
+          "key": "activeMembers",
+          "type": "integer",
+          "required": false,
+          "description": "活跃成员数"
+        },
+        {
+          "key": "yearlyActivities",
+          "type": "integer",
+          "required": false,
+          "description": "年度活动数"
+        },
+        {
+          "key": "awardProjects",
+          "type": "integer",
+          "required": false,
+          "description": "获奖项目数"
+        },
+        {
+          "key": "partners",
+          "type": "integer",
+          "required": false,
+          "description": "合作伙伴数"
+        },
+        {
+          "key": "githubUrl",
+          "type": "string",
+          "required": false,
+          "size": 512,
+          "description": "GitHub 链接"
+        },
+        {
+          "key": "discordUrl",
+          "type": "string",
+          "required": false,
+          "size": 512,
+          "description": "Discord 链接"
+        },
+        {
+          "key": "instagramUrl",
+          "type": "string",
+          "required": false,
+          "size": 512,
+          "description": "Instagram 链接"
+        },
+        {
+          "key": "youtubeUrl",
+          "type": "string",
+          "required": false,
+          "size": 512,
+          "description": "YouTube 链接"
+        },
+        {
+          "key": "attendanceDayOfWeek",
+          "type": "integer",
+          "required": false,
+          "description": "点名日期（0=周日, 1=周一, ..., 6=周六）"
+        },
+        {
+          "key": "attendanceSession1Start",
+          "type": "string",
+          "required": false,
+          "size": 256,
+          "description": "第一时段开始时间（JSON: {hour, minute}）"
+        },
+        {
+          "key": "attendanceSession1Duration",
+          "type": "integer",
+          "required": false,
+          "description": "第一时段持续时间（分钟）"
+        },
+        {
+          "key": "attendanceSession2Start",
+          "type": "string",
+          "required": false,
+          "size": 256,
+          "description": "第二时段开始时间（JSON: {hour, minute}）"
+        },
+        {
+          "key": "attendanceSession2Duration",
+          "type": "integer",
+          "required": false,
+          "description": "第二时段持续时间（分钟）"
+        },
+        {
+          "key": "attendanceWeekStartDate",
+          "type": "string",
+          "required": false,
+          "size": 256,
+          "description": "第1周开始日期（ISO 8601 格式）"
+        },
+        {
+          "key": "attendanceDebugMode",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "点名调试模式"
+        },
+        {
+          "key": "createdAt",
+          "type": "datetime",
+          "required": false,
+          "description": "创建时间"
+        },
+        {
+          "key": "updatedAt",
+          "type": "datetime",
+          "required": false,
+          "description": "更新时间"
+        }
+      ]
     }
   ]
 }

@@ -154,6 +154,80 @@ export function getCurrentAttendanceSession(): AttendanceSession | null {
 }
 
 /**
+ * 使用外部配置获取当前点名时段（用于 API 路由，配置从数据库加载）
+ */
+export function getCurrentAttendanceSessionWithConfig(config: AttendanceConfig, isDebug: boolean): AttendanceSession | null {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  // 调试模式：始终返回第一个时段
+  if (isDebug) {
+    const startTime = new Date(now);
+    startTime.setSeconds(0, 0);
+    const endTime = new Date(now);
+    endTime.setMinutes(endTime.getMinutes() + 5);
+    
+    const sessionTimeStr = `${config.session1Start.hour}:${String(config.session1Start.minute).padStart(2, '0')}`;
+    return {
+      sessionTime: sessionTimeStr as '15:20' | '16:35',
+      startTime,
+      endTime,
+      isActive: true,
+      minutesRemaining: 5,
+    };
+  }
+
+  // 不是配置的日期，返回 null
+  if (dayOfWeek !== config.dayOfWeek) {
+    return null;
+  }
+
+  const { session1Start, session1Duration, session2Start, session2Duration } = config;
+
+  // 第一个时段
+  const session1EndMinute = session1Start.minute + session1Duration;
+  if (hours === session1Start.hour && minutes >= session1Start.minute && minutes < session1EndMinute) {
+    const startTime = new Date(now);
+    startTime.setHours(session1Start.hour, session1Start.minute, 0, 0);
+    const endTime = new Date(now);
+    endTime.setHours(session1Start.hour, session1EndMinute, 0, 0);
+    const minutesRemaining = session1EndMinute - minutes;
+    const sessionTimeStr = `${session1Start.hour}:${String(session1Start.minute).padStart(2, '0')}`;
+
+    return {
+      sessionTime: sessionTimeStr as '15:20' | '16:35',
+      startTime,
+      endTime,
+      isActive: true,
+      minutesRemaining,
+    };
+  }
+
+  // 第二个时段
+  const session2EndMinute = session2Start.minute + session2Duration;
+  if (hours === session2Start.hour && minutes >= session2Start.minute && minutes < session2EndMinute) {
+    const startTime = new Date(now);
+    startTime.setHours(session2Start.hour, session2Start.minute, 0, 0);
+    const endTime = new Date(now);
+    endTime.setHours(session2Start.hour, session2EndMinute, 0, 0);
+    const minutesRemaining = session2EndMinute - minutes;
+    const sessionTimeStr = `${session2Start.hour}:${String(session2Start.minute).padStart(2, '0')}`;
+
+    return {
+      sessionTime: sessionTimeStr as '15:20' | '16:35',
+      startTime,
+      endTime,
+      isActive: true,
+      minutesRemaining,
+    };
+  }
+
+  return null;
+}
+
+/**
  * 获取当前周数（从配置的起始日期开始计算）
  */
 export function getCurrentWeekNumber(): number {
@@ -161,6 +235,27 @@ export function getCurrentWeekNumber(): number {
   
   // 从配置中获取第1周的开始日期
   const weekStartDate = new Date(attendanceConfig.weekStartDate);
+  
+  // 如果当前日期早于起始日期，返回第1周
+  if (now < weekStartDate) {
+    return 1;
+  }
+
+  const timeDiff = now.getTime() - weekStartDate.getTime();
+  const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+  const weekNumber = Math.floor(daysDiff / 7) + 1;
+
+  return Math.max(1, weekNumber);
+}
+
+/**
+ * 使用外部配置获取当前周数（用于 API 路由，配置从数据库加载）
+ */
+export function getCurrentWeekNumberWithConfig(config: AttendanceConfig): number {
+  const now = new Date();
+  
+  // 从配置中获取第1周的开始日期
+  const weekStartDate = new Date(config.weekStartDate);
   
   // 如果当前日期早于起始日期，返回第1周
   if (now < weekStartDate) {

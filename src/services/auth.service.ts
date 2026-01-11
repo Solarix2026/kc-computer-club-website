@@ -583,43 +583,56 @@ export async function adminLogout(): Promise<void> {
 
 /**
  * 检查当前会话
+ * @param preferredType 优先恢复的会话类型（根据当前页面路径）
  */
-export async function checkSession(): Promise<{
+export async function checkSession(preferredType?: 'student' | 'admin'): Promise<{
   type: 'student' | 'admin' | null;
   user: StudentUser | AdminUser | null;
 }> {
   try {
-    console.log('=== checkSession called ===');
+    console.log('=== checkSession called ===', { preferredType });
     
-    // 步骤 1: 优先检查 localStorage（最快，适合页面刷新）
-    try {
-      const adminSession = localStorage.getItem('adminSession');
-      if (adminSession) {
-        const adminUser = JSON.parse(adminSession) as AdminUser;
-        console.log('Admin session restored from localStorage');
-        return {
-          type: 'admin',
-          user: adminUser,
-        };
+    // 根据优先类型决定检查顺序
+    // 重要：只检查匹配当前路径的 session 类型，不跨类型恢复
+    const checkAdminFirst = preferredType === 'admin';
+    
+    // 步骤 1: 只检查与当前路径匹配的 session 类型
+    // 这样可以避免在学生页面恢复 admin session，反之亦然
+    
+    if (checkAdminFirst) {
+      // 在 admin 页面，只检查 admin session
+      try {
+        const adminSession = localStorage.getItem('adminSession');
+        if (adminSession) {
+          const adminUser = JSON.parse(adminSession) as AdminUser;
+          console.log('Admin session restored from localStorage');
+          return {
+            type: 'admin',
+            user: adminUser,
+          };
+        }
+      } catch (err) {
+        console.warn('Failed to restore admin session from localStorage:', (err as Error).message);
+        localStorage.removeItem('adminSession');
       }
-    } catch (err) {
-      console.warn('Failed to restore admin session from localStorage:', (err as Error).message);
-      localStorage.removeItem('adminSession');
-    }
-
-    try {
-      const studentSession = localStorage.getItem('studentSession');
-      if (studentSession) {
-        const studentUser = JSON.parse(studentSession) as StudentUser;
-        console.log('Student session restored from localStorage');
-        return {
-          type: 'student',
-          user: studentUser,
-        };
+      // 不检查 student session - admin 页面不应该使用 student session
+    } else {
+      // 在非 admin 页面，只检查 student session
+      try {
+        const studentSession = localStorage.getItem('studentSession');
+        if (studentSession) {
+          const studentUser = JSON.parse(studentSession) as StudentUser;
+          console.log('Student session restored from localStorage');
+          return {
+            type: 'student',
+            user: studentUser,
+          };
+        }
+      } catch (err) {
+        console.warn('Failed to restore student session from localStorage:', (err as Error).message);
+        localStorage.removeItem('studentSession');
       }
-    } catch (err) {
-      console.warn('Failed to restore student session from localStorage:', (err as Error).message);
-      localStorage.removeItem('studentSession');
+      // 不检查 admin session - 学生页面不应该使用 admin session
     }
 
     // 步骤 2: 尝试检查 Appwrite 的真实 session（跨标签页的事实来源）

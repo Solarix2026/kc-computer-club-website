@@ -87,6 +87,14 @@ export async function GET() {
       { name: 'discordUrl', type: 'string', size: 255 },
       { name: 'instagramUrl', type: 'string', size: 255 },
       { name: 'youtubeUrl', type: 'string', size: 255 },
+      // 点名配置属性
+      { name: 'attendanceDayOfWeek', type: 'integer' },
+      { name: 'attendanceSession1Start', type: 'string', size: 255 },
+      { name: 'attendanceSession1Duration', type: 'integer' },
+      { name: 'attendanceSession2Start', type: 'string', size: 255 },
+      { name: 'attendanceSession2Duration', type: 'integer' },
+      { name: 'attendanceWeekStartDate', type: 'string', size: 255 },
+      { name: 'attendanceDebugMode', type: 'boolean' },
     ];
 
     const results: Array<{ name: string; status: 'created' | 'exists' | 'error'; error?: string }> = [];
@@ -100,6 +108,16 @@ export async function GET() {
             databaseId,
             collectionId,
             attr.name,
+            false
+          );
+        } else if (attr.type === 'boolean') {
+          await (databases as unknown as {
+            createBooleanAttribute: (dbId: string, collId: string, key: string, required: boolean, defaultValue?: boolean) => Promise<unknown>;
+          }).createBooleanAttribute(
+            databaseId,
+            collectionId,
+            attr.name,
+            false,
             false
           );
         } else {

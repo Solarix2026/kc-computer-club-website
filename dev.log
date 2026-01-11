@@ -2,24 +2,13 @@
 > kccompt@0.1.0 dev
 > next dev
 
+ÔÜá Port 3000 is in use by process 21884, using available port 3001 instead.
 Ôû▓ Next.js 16.1.1 (Turbopack)
-- Local:         http://localhost:3000
-- Network:       http://192.168.68.106:3000
+- Local:         http://localhost:3001
+- Network:       http://192.168.68.106:3001
 - Environments: .env.local
 
 Ô£ô Starting...
-ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-Ô£ô Ready in 1772ms
- GET /admin 200 in 1739ms (compile: 732ms, proxy.ts: 191ms, render: 817ms)
- GET /auth/login 200 in 1823ms (compile: 1094ms, proxy.ts: 235ms, render: 494ms)
- GET /attendance 200 in 1762ms (compile: 1146ms, proxy.ts: 180ms, render: 436ms)
- GET /admin/attendance?id=b9049d63-5767-4c25-ac56-519c73b5811f&vscodeBrowserReqId=1768122530789 200 in 1774ms (compile: 1201ms, proxy.ts: 178ms, render: 395ms)
- GET /api/attendance 200 in 447ms (compile: 412ms, proxy.ts: 12ms, render: 24ms)
- GET /api/attendance 200 in 451ms (compile: 411ms, proxy.ts: 33ms, render: 7ms)
- GET /api/auth/me 404 in 1004ms (compile: 167ms, proxy.ts: 12ms, render: 824ms)
- GET /api/auth/me 404 in 988ms (compile: 260ms, proxy.ts: 10ms, render: 718ms)
- GET /api/auth/me 404 in 683ms (compile: 466ms, proxy.ts: 12ms, render: 205ms)
- GET /api/auth/me 404 in 632ms (compile: 463ms, proxy.ts: 34ms, render: 136ms)
- GET /api/attendance/records?weekNumber=1 200 in 287ms (compile: 100ms, proxy.ts: 57ms, render: 131ms)
- GET /api/attendance 200 in 12ms (compile: 4ms, proxy.ts: 3ms, render: 5ms)
- GET /api/attendance 200 in 14ms (compile: 5ms, proxy.ts: 4ms, render: 6ms)
+Ô¿» Unable to acquire lock at C:\Users\mjtan\Desktop\kccompt\.next\dev\lock, is another instance of next dev running?
+  Suggestion: If you intended to restart next dev, terminate the other process, and then try again.
+[?25h

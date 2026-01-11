@@ -2,6 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   studentSignup,
   studentLogin,
@@ -49,16 +50,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedOut, setIsLoggedOut] = useState(false); // 防止登出后自动恢复其他 session
+  const pathname = usePathname();
 
   // Check for existing session on mount
   useEffect(() => {
     const checkExistingSession = async () => {
+      // 如果用户刚刚登出，不要自动恢复其他 session
+      if (isLoggedOut) {
+        setIsLoading(false);
+        return;
+      }
+      
       let restoredUser: AuthUser | null = null;
       
       try {
-        // 总是优先检查 Appwrite 的真实 session（跨标签页的事实来源）
-        // 而不是依赖 localStorage 的清除逻辑，以避免标签页之间的冲突
-        const sessionInfo = await checkSession();
+        // 根据当前路径决定优先恢复哪种 session
+        // 在 /admin/* 路径下优先恢复 admin session
+        // 在其他路径下优先恢复 student session
+        const isAdminPath = pathname?.startsWith('/admin');
+        const preferredType: 'student' | 'admin' = isAdminPath ? 'admin' : 'student';
+        
+        const sessionInfo = await checkSession(preferredType);
         
         if (sessionInfo.user) {
           restoredUser = sessionInfo.user;
@@ -72,30 +85,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.setItem('adminSession', JSON.stringify(sessionInfo.user));
           }
         } else {
-          // Appwrite 没有活跃 session，尝试从 localStorage 恢复
-          // （用于离线或 localStorage 缓存的场景）
-          const savedAdminSession = localStorage.getItem('adminSession');
-          if (savedAdminSession) {
-            try {
-              restoredUser = JSON.parse(savedAdminSession) as AdminUser;
-              setUser(restoredUser);
-              return;
-            } catch {
-              localStorage.removeItem('adminSession');
-            }
-          }
-
-          const savedStudentSession = localStorage.getItem('studentSession');
-          if (savedStudentSession) {
-            try {
-              restoredUser = JSON.parse(savedStudentSession) as StudentUser;
-              setUser(restoredUser);
-              return;
-            } catch {
-              localStorage.removeItem('studentSession');
-            }
-          }
-
           setUser(null);
         }
       } catch (err) {
@@ -107,10 +96,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     checkExistingSession();
-  }, []);
+  }, [pathname, isLoggedOut]);
 
   const login = async (email: string, password: string) => {
     setError(null);
+    setIsLoggedOut(false); // 重置登出标志
     try {
       const studentUser = await studentLogin(email, password);
       setUser(studentUser);
@@ -142,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleAdminLogin = async (adminUsername: string, password: string) => {
     setError(null);
+    setIsLoggedOut(false); // 重置登出标志
     try {
       const adminUser = await adminLogin(adminUsername, password);
       setUser(adminUser);
@@ -156,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     setError(null);
+    setIsLoggedOut(true); // 设置登出标志，防止自动恢复其他 session
     try {
       // 检查是管理员还是学生，调用对应的登出函数
       if (user && 'role' in user && user.role === 'admin') {
