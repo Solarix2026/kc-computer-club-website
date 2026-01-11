@@ -227,6 +227,59 @@ export function Header({
                 {item.label}
               </Link>
             ))}
+            
+            {/* 更多菜单 - 移动端 */}
+            <div className="border-t border-gray-200 dark:border-[#283930] my-2 pt-2">
+              <p className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                更多功能
+              </p>
+              <Link
+                href="/attendance"
+                className="px-4 py-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-[#13ec80]/10 hover:text-primary transition-colors flex items-center gap-3"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="material-symbols-outlined text-lg text-primary">event_available</span>
+                <div>
+                  <div className="font-medium">签到</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">标记考勤</div>
+                </div>
+              </Link>
+              <Link
+                href="/chat"
+                className="px-4 py-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-3"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="material-symbols-outlined text-lg text-blue-500">chat</span>
+                <div>
+                  <div className="font-medium">群聊</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">加入讨论</div>
+                </div>
+              </Link>
+              <Link
+                href="/projects/submit"
+                className="px-4 py-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-400 transition-colors flex items-center gap-3"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="material-symbols-outlined text-lg text-purple-500">lightbulb</span>
+                <div>
+                  <div className="font-medium">项目提交</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">提案新项目</div>
+                </div>
+              </Link>
+              <Link
+                href="/projects"
+                className="px-4 py-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-3"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="material-symbols-outlined text-lg text-cyan-500">folder</span>
+                <div>
+                  <div className="font-medium">所有项目</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">浏览项目列表</div>
+                </div>
+              </Link>
+            </div>
+            
+            {/* 用户操作 */}
             <div className="border-t border-gray-200 dark:border-[#283930] my-2 pt-2">
               {isStudent && user ? (
                 <div className="space-y-2">
