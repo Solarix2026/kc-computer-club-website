@@ -21,10 +21,15 @@ export async function GET(request: NextRequest) {
     const checkUser = searchParams.get('checkUser');
     const getStats = searchParams.get('stats');
 
-    // 如果请求统计数据
+    // 如果请求统计数据，同时返回项目列表
     if (getStats === 'true') {
+      const projects = await getAllProjects();
       const stats = await getProjectStats();
-      return NextResponse.json({ success: true, stats });
+      return NextResponse.json({ 
+        success: true, 
+        projects,
+        stats,
+      });
     }
 
     // 如果是检查用户是否已在项目中

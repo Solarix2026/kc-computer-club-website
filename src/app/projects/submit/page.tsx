@@ -117,6 +117,7 @@ export default function ProjectSubmitPage() {
   };
 
   const [memberValidation, setMemberValidation] = useState<Record<number, { valid: boolean; message?: string; loading?: boolean }>>({});
+  const [debounceTimers, setDebounceTimers] = useState<Record<number, NodeJS.Timeout>>({});
 
   const handleMemberChange = (index: number, field: keyof TeamMember, value: string) => {
     const newMembers = [...teamMembers];
@@ -124,11 +125,30 @@ export default function ProjectSubmitPage() {
     setTeamMembers(newMembers);
     setError(null);
     
-    // 当邮箱改变时，清除验证状态
+    // 当邮箱改变时，自动触发验证（使用 debounce）
     if (field === 'email') {
+      // 清除之前的验证状态
       setMemberValidation((prev) => ({
         ...prev,
         [index]: { valid: false, message: undefined, loading: false },
+      }));
+      
+      // 清除之前的定时器
+      if (debounceTimers[index]) {
+        clearTimeout(debounceTimers[index]);
+      }
+      
+      // 如果邮箱为空，不验证
+      if (!value.trim()) return;
+      
+      // 设置新的定时器（800ms 后自动验证）
+      const timer = setTimeout(() => {
+        validateMemberEmail(index, value);
+      }, 800);
+      
+      setDebounceTimers((prev) => ({
+        ...prev,
+        [index]: timer,
       }));
     }
   };
@@ -602,7 +622,7 @@ export default function ProjectSubmitPage() {
                                   type="email"
                                   value={member.email}
                                   onChange={(e) => handleMemberChange(index, 'email', e.target.value)}
-                                  placeholder="邮箱（需先验证）"
+                                  placeholder="输入邮箱（自动验证）"
                                   required
                                   className={`h-10 px-3 rounded-lg bg-white dark:bg-[#1a2c24] border text-sm text-[#111814] dark:text-white placeholder:text-[#618975] focus:outline-none focus:ring-2 focus:ring-[#13ec80] w-full ${
                                     memberValidation[index]?.valid
@@ -612,6 +632,12 @@ export default function ProjectSubmitPage() {
                                       : 'border-[#e5e8e7] dark:border-[#2a3c34]'
                                   }`}
                                 />
+                                {memberValidation[index]?.loading && (
+                                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#618975] text-lg animate-spin">hourglass_empty</span>
+                                )}
+                                {memberValidation[index]?.valid && !memberValidation[index]?.loading && (
+                                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#13ec80] text-lg">check_circle</span>
+                                )}
                               </div>
                               <input
                                 type="text"
@@ -648,28 +674,15 @@ export default function ProjectSubmitPage() {
                         )}
                       </div>
                       
-                      {/* 验证状态和按钮 */}
-                      {index > 0 && (
+                      {/* 验证状态显示（自动验证） */}
+                      {index > 0 && memberValidation[index] && (
                         <div className="flex items-center gap-3 pl-13">
-                          <button
-                            type="button"
-                            onClick={() => validateMemberEmail(index, member.email)}
-                            disabled={!member.email || memberValidation[index]?.loading}
-                            className="px-4 py-1.5 rounded-lg bg-[#13ec80]/20 text-[#13ec80] text-sm font-medium hover:bg-[#13ec80]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
-                          >
-                            {memberValidation[index]?.loading ? (
-                              <>
-                                <span className="material-symbols-outlined text-sm animate-spin">hourglass_empty</span>
-                                验证中...
-                              </>
-                            ) : (
-                              <>
-                                <span className="material-symbols-outlined text-sm">verified</span>
-                                验证邮箱
-                              </>
-                            )}
-                          </button>
-                          {memberValidation[index]?.message && (
+                          {memberValidation[index]?.loading ? (
+                            <span className="text-xs flex items-center gap-1 text-[#618975]">
+                              <span className="material-symbols-outlined text-sm animate-spin">hourglass_empty</span>
+                              正在验证...
+                            </span>
+                          ) : memberValidation[index]?.message ? (
                             <span className={`text-xs flex items-center gap-1 ${
                               memberValidation[index]?.valid ? 'text-[#13ec80]' : 'text-red-400'
                             }`}>
@@ -678,7 +691,7 @@ export default function ProjectSubmitPage() {
                               </span>
                               {memberValidation[index].message}
                             </span>
-                          )}
+                          ) : null}
                         </div>
                       )}
                     </div>
@@ -686,7 +699,7 @@ export default function ProjectSubmitPage() {
                 </div>
                 <p className="text-xs text-[#618975]">
                   <span className="material-symbols-outlined text-sm align-middle mr-1">info</span>
-                  组员必须已在系统中注册账号。添加组员后请点击"验证邮箱"确认用户存在。
+                  组员必须已在系统中注册账号。输入邮箱后系统会自动验证。
                 </p>
               </div>
             </div>

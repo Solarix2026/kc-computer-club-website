@@ -131,6 +131,25 @@ export interface AIChat {
   createdAt: string;
 }
 
+// Project Checklist Types
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  completedAt?: string;
+  assignee?: string;
+}
+
+export interface ProjectChecklist {
+  checklistId: string;
+  projectId: string;
+  title: string;
+  items: ChecklistItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Project Types
 export interface ProjectMember {
   userId: string;
@@ -155,6 +174,7 @@ export interface Project {
   leaderEmail: string;
   status: 'pending' | 'approved' | 'rejected' | 'revision';
   adminFeedback?: string;
+  checklist?: ProjectChecklist;
   createdAt: string;
   updatedAt: string;
 }
