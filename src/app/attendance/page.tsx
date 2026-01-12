@@ -153,7 +153,7 @@ export default function AttendancePage() {
             <h2 className="text-2xl font-bold text-white mb-2">请先登录</h2>
             <p className="text-[#8a9e94] mb-6">您需要登录学生账号才能进行点名</p>
             <Link 
-              href="/auth?redirect=/attendance"
+              href="/auth/login?redirect=/attendance"
               className="inline-flex items-center gap-2 px-6 py-3 bg-[#13ec80] text-[#102219] font-semibold rounded-xl hover:bg-[#0fd673] transition-all"
             >
               <span className="material-symbols-outlined">login</span>

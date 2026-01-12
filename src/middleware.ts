@@ -15,7 +15,12 @@ const publicRoutes = [
 ];
 
 export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+  const pathname = request.nextUrl.pathname || '/';
+
+  // Ensure pathname is a string before calling startsWith
+  if (!pathname || typeof pathname !== 'string') {
+    return NextResponse.next();
+  }
 
   // Allow API routes to pass through (they handle their own auth)
   if (pathname.startsWith('/api')) {
