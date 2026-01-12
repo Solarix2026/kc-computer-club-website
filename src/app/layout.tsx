@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
@@ -37,6 +38,7 @@ export default function RootLayout({
             {children}
           </NotificationProvider>
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
