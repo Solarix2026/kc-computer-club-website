@@ -3,12 +3,15 @@
 
 import { useState, useEffect } from 'react';
 import { ProjectChecklist, ChecklistItem } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProjectChecklistProps {
   projectId: string;
   checklist?: ProjectChecklist;
   isReadOnly?: boolean;
   onChecklistUpdate?: (updatedChecklist: ProjectChecklist) => void;
+  projectMembers?: Array<{ email: string; role?: string }>;
+  leaderEmail?: string;
 }
 
 export function ProjectChecklistComponent({
@@ -16,11 +19,33 @@ export function ProjectChecklistComponent({
   checklist: initialChecklist,
   isReadOnly = false,
   onChecklistUpdate,
+  projectMembers = [],
+  leaderEmail,
 }: ProjectChecklistProps) {
+  const { user } = useAuth();
   const [checklist, setChecklist] = useState<ProjectChecklist | null>(initialChecklist || null);
   const [isLoading, setIsLoading] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemDescription, setNewItemDescription] = useState('');
+
+  // 检查当前用户是否是项目成员
+  const isUserMember = (): boolean => {
+    if (!user?.email) return false;
+    const userEmail = user.email.toLowerCase().trim();
+    
+    // 检查是否是组长
+    if (leaderEmail && leaderEmail.toLowerCase().trim() === userEmail) {
+      return true;
+    }
+    
+    // 检查是否是成员
+    return projectMembers.some(m => 
+      m.email && m.email.toLowerCase().trim() === userEmail
+    );
+  };
+
+  // 如果用户不是成员，强制只读
+  const effectiveReadOnly = isReadOnly || !isUserMember();
 
   // 计算进度百分比
   const calculateProgress = (items: ChecklistItem[]): number => {
@@ -31,7 +56,7 @@ export function ProjectChecklistComponent({
 
   // 切换检查清单项目
   const handleToggleItem = async (itemId: string) => {
-    if (isReadOnly || !checklist) return;
+    if (effectiveReadOnly || !checklist || !user?.email) return;
 
     setIsLoading(true);
     try {
@@ -51,22 +76,23 @@ export function ProjectChecklistComponent({
         updatedAt: new Date().toISOString(),
       };
 
-      // 调用 API 更新
+      // 调用 API 更新（发送用户邮箱进行权限验证）
       const response = await fetch(`/api/projects/${projectId}/checklist`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: updatedItems }),
+        body: JSON.stringify({ items: updatedItems, userEmail: user.email }),
       });
 
       if (!response.ok) {
-        throw new Error('更新检查清单失败');
+        const data = await response.json();
+        throw new Error(data.error || '更新检查清单失败');
       }
 
       setChecklist(updatedChecklist);
       onChecklistUpdate?.(updatedChecklist);
     } catch (err) {
       console.error('更新检查清单失败:', err);
-      alert('更新检查清单失败');
+      alert(err instanceof Error ? err.message : '更新检查清单失败');
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +100,7 @@ export function ProjectChecklistComponent({
 
   // 添加新项目
   const handleAddItem = async () => {
-    if (!newItemTitle.trim() || !checklist) return;
+    if (!newItemTitle.trim() || !checklist || !user?.email) return;
 
     setIsLoading(true);
     try {
@@ -92,15 +118,16 @@ export function ProjectChecklistComponent({
         updatedAt: new Date().toISOString(),
       };
 
-      // 调用 API 更新
+      // 调用 API 更新（发送用户邮箱进行权限验证）
       const response = await fetch(`/api/projects/${projectId}/checklist`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: updatedItems }),
+        body: JSON.stringify({ items: updatedItems, userEmail: user.email }),
       });
 
       if (!response.ok) {
-        throw new Error('添加项目失败');
+        const data = await response.json();
+        throw new Error(data.error || '添加项目失败');
       }
 
       setChecklist(updatedChecklist);
@@ -109,7 +136,7 @@ export function ProjectChecklistComponent({
       onChecklistUpdate?.(updatedChecklist);
     } catch (err) {
       console.error('添加项目失败:', err);
-      alert('添加项目失败');
+      alert(err instanceof Error ? err.message : '添加项目失败');
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +144,7 @@ export function ProjectChecklistComponent({
 
   // 删除项目
   const handleDeleteItem = async (itemId: string) => {
-    if (isReadOnly || !checklist) return;
+    if (effectiveReadOnly || !checklist || !user?.email) return;
 
     setIsLoading(true);
     try {
@@ -128,22 +155,23 @@ export function ProjectChecklistComponent({
         updatedAt: new Date().toISOString(),
       };
 
-      // 调用 API 更新
+      // 调用 API 更新（发送用户邮箱进行权限验证）
       const response = await fetch(`/api/projects/${projectId}/checklist`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: updatedItems }),
+        body: JSON.stringify({ items: updatedItems, userEmail: user.email }),
       });
 
       if (!response.ok) {
-        throw new Error('删除项目失败');
+        const data = await response.json();
+        throw new Error(data.error || '删除项目失败');
       }
 
       setChecklist(updatedChecklist);
       onChecklistUpdate?.(updatedChecklist);
     } catch (err) {
       console.error('删除项目失败:', err);
-      alert('删除项目失败');
+      alert(err instanceof Error ? err.message : '删除项目失败');
     } finally {
       setIsLoading(false);
     }
@@ -153,9 +181,13 @@ export function ProjectChecklistComponent({
     return (
       <div className="bg-[#1a2c24] rounded-2xl p-6 lg:p-8 border border-white/10">
         <h3 className="text-lg font-bold mb-4">项目检查清单</h3>
-        <p className="text-gray-400 mb-6">还没有检查清单项目</p>
+        {effectiveReadOnly && !isUserMember() ? (
+          <p className="text-gray-400 mb-6">你不是此项目的成员，无法编辑检查清单</p>
+        ) : (
+          <p className="text-gray-400 mb-6">还没有检查清单项目</p>
+        )}
 
-        {!isReadOnly && (
+        {!effectiveReadOnly && (
           <div className="space-y-4">
             <input
               type="text"
@@ -224,7 +256,7 @@ export function ProjectChecklistComponent({
               type="checkbox"
               checked={item.completed}
               onChange={() => handleToggleItem(item.id)}
-              disabled={isReadOnly || isLoading}
+              disabled={effectiveReadOnly || isLoading}
               className="mt-1 w-5 h-5 rounded cursor-pointer"
             />
             <div className="flex-1 min-w-0">
@@ -246,7 +278,7 @@ export function ProjectChecklistComponent({
                 </p>
               )}
             </div>
-            {!isReadOnly && (
+            {!effectiveReadOnly && (
               <button
                 onClick={() => handleDeleteItem(item.id)}
                 disabled={isLoading}
@@ -260,7 +292,7 @@ export function ProjectChecklistComponent({
       </div>
 
       {/* 添加新项目表单 */}
-      {!isReadOnly && (
+      {!effectiveReadOnly && (
         <div className="border-t border-[#2a3c34] pt-4 space-y-3">
           <input
             type="text"

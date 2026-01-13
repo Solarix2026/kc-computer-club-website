@@ -7,6 +7,38 @@ const APPWRITE_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
 const PROJECTS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION || 'projects';
 
 /**
+ * 检查用户是否是项目成员
+ */
+function isProjectMember(project: Record<string, unknown>, userEmail: string): boolean {
+  if (!userEmail) return false;
+  
+  const email = userEmail.toLowerCase().trim();
+  
+  // 检查是否是组长
+  if (project.leaderEmail && (project.leaderEmail as string).toLowerCase().trim() === email) {
+    return true;
+  }
+  
+  // 检查是否是成员
+  if (project.members) {
+    try {
+      const members = typeof project.members === 'string' 
+        ? JSON.parse(project.members) 
+        : project.members;
+      if (Array.isArray(members)) {
+        return members.some((m: { email?: string }) => 
+          m.email && m.email.toLowerCase().trim() === email
+        );
+      }
+    } catch {
+      // 忽略解析错误
+    }
+  }
+  
+  return false;
+}
+
+/**
  * GET /api/projects/[id]/checklist - 获取项目检查清单
  * 检查清单存储在 resources 字段中的特殊格式中
  */
@@ -57,6 +89,7 @@ export async function GET(
 /**
  * PUT /api/projects/[id]/checklist - 更新项目检查清单
  * 检查清单存储在 resources 字段中
+ * 只有项目成员才能编辑
  */
 export async function PUT(
   request: NextRequest,
@@ -65,7 +98,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { items } = body;
+    const { items, userEmail } = body;
 
     if (!Array.isArray(items)) {
       return NextResponse.json(
@@ -80,6 +113,14 @@ export async function PUT(
       PROJECTS_COLLECTION_ID,
       id
     );
+
+    // 权限检查：只有项目成员才能编辑检查清单
+    if (!userEmail || !isProjectMember(project, userEmail)) {
+      return NextResponse.json(
+        { error: '没有权限编辑此项目的检查清单' },
+        { status: 403 }
+      );
+    }
 
     // 构建新的检查清单
     const checklist = {

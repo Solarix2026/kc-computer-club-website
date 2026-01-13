@@ -358,6 +358,8 @@ export default function ProjectDetailPage() {
                   projectId={project.projectId}
                   checklist={project.checklist}
                   isReadOnly={false}
+                  projectMembers={project.members}
+                  leaderEmail={project.leaderEmail}
                 />
               )}
             </div>
