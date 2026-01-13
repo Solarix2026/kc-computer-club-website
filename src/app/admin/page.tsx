@@ -218,7 +218,7 @@ export default function AdminDashboard() {
       <div className="mb-8 bg-linear-to-r from-[#137fec]/20 via-[#1a2632] to-transparent rounded-2xl border border-[#137fec]/20 p-8">
         <h1 className="text-3xl font-black text-white mb-2">欢迎回来！👋</h1>
         <p className="text-gray-400">
-          这是电脑社的管理后台。您可以在这里管理公告、活动、评论和成员信息。
+          这是电脑学会的管理后台。您可以在这里管理公告、活动、评论和成员信息。
         </p>
       </div>
 

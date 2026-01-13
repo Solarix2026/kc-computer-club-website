@@ -25,9 +25,16 @@ const DEFAULT_CONFIG: AttendanceConfig = {
 };
 
 /**
- * 从数据库获取点名配置
+ * 生成随机点名验证码（4位数字）
  */
-async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; debugMode: boolean }> {
+function generateAttendanceCode(): string {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+/**
+ * 从数据库获取点名配置（包括验证码）
+ */
+async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; debugMode: boolean; attendanceCode: string | null; codeEnabled: boolean }> {
   try {
     const doc = await serverDatabases.getDocument(
       APPWRITE_DATABASE_ID,
@@ -51,6 +58,8 @@ async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; 
     return {
       config,
       debugMode: doc.attendanceDebugMode ?? false,
+      attendanceCode: doc.attendanceCode ?? null,
+      codeEnabled: doc.attendanceCodeEnabled ?? false,
     };
   } catch (error: unknown) {
     const err = error as { code?: number };
@@ -59,14 +68,19 @@ async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; 
     } else {
       console.error('[AttendanceAPI] 获取配置失败:', error);
     }
-    return { config: DEFAULT_CONFIG, debugMode: false };
+    return { config: DEFAULT_CONFIG, debugMode: false, attendanceCode: null, codeEnabled: false };
   }
 }
 
 /**
- * 保存点名配置到数据库
+ * 保存点名配置到数据库（包括验证码）
  */
-async function saveAttendanceConfigToDB(config: Partial<AttendanceConfig>, debugMode?: boolean): Promise<void> {
+async function saveAttendanceConfigToDB(
+  config: Partial<AttendanceConfig>, 
+  debugMode?: boolean,
+  attendanceCode?: string | null,
+  codeEnabled?: boolean
+): Promise<void> {
   const updateData: Record<string, unknown> = {};
   
   if (config.dayOfWeek !== undefined) {
@@ -89,6 +103,12 @@ async function saveAttendanceConfigToDB(config: Partial<AttendanceConfig>, debug
   }
   if (debugMode !== undefined) {
     updateData.attendanceDebugMode = debugMode;
+  }
+  if (attendanceCode !== undefined) {
+    updateData.attendanceCode = attendanceCode;
+  }
+  if (codeEnabled !== undefined) {
+    updateData.attendanceCodeEnabled = codeEnabled;
   }
 
   try {
@@ -133,13 +153,15 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     // 从数据库获取配置
-    const { config, debugMode } = await getAttendanceConfigFromDB();
+    const { config, debugMode, attendanceCode, codeEnabled } = await getAttendanceConfigFromDB();
 
     // 获取调试模式状态
     if (action === 'debug-status') {
       return NextResponse.json({
         debugMode,
         config,
+        attendanceCode,
+        codeEnabled,
       });
     }
 
@@ -155,6 +177,8 @@ export async function GET(request: NextRequest) {
         weekNumber,
         debugMode,
         config,
+        codeEnabled,
+        hasCode: !!attendanceCode,
       });
     }
 
@@ -167,6 +191,8 @@ export async function GET(request: NextRequest) {
       weekNumber,
       debugMode,
       config,
+      codeEnabled,
+      hasCode: !!attendanceCode,
     });
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
@@ -184,7 +210,8 @@ export async function GET(request: NextRequest) {
  * Body: {
  *   studentId: string,
  *   studentName: string,
- *   studentEmail: string
+ *   studentEmail: string,
+ *   verificationCode?: string  // 验证码（如果开启）
  * }
  * 
  * 或者设置调试模式:
@@ -198,17 +225,29 @@ export async function GET(request: NextRequest) {
  *   action: 'update-config',
  *   config: AttendanceConfig
  * }
+ * 
+ * 或者生成/切换验证码:
+ * Body: {
+ *   action: 'generate-code'  // 生成新验证码
+ * }
+ * Body: {
+ *   action: 'toggle-code',
+ *   enabled: boolean  // 开启/关闭验证码
+ * }
+ * Body: {
+ *   action: 'clear-code'  // 清除验证码
+ * }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
     // 从数据库获取当前配置
-    const { config: currentConfig, debugMode: currentDebugMode } = await getAttendanceConfigFromDB();
+    const { config: currentConfig, debugMode: currentDebugMode, attendanceCode: currentCode, codeEnabled: currentCodeEnabled } = await getAttendanceConfigFromDB();
 
     // 切换调试模式
     if (body.action === 'toggle-debug') {
-      await saveAttendanceConfigToDB({}, body.enabled);
+      await saveAttendanceConfigToDB({}, body.enabled, undefined, undefined);
       return NextResponse.json({
         success: true,
         debugMode: body.enabled,
@@ -218,7 +257,7 @@ export async function POST(request: NextRequest) {
 
     // 更新点名配置
     if (body.action === 'update-config') {
-      await saveAttendanceConfigToDB(body.config);
+      await saveAttendanceConfigToDB(body.config, undefined, undefined, undefined);
       const { config: updatedConfig } = await getAttendanceConfigFromDB();
       return NextResponse.json({
         success: true,
@@ -227,14 +266,64 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 生成新验证码
+    if (body.action === 'generate-code') {
+      const newCode = generateAttendanceCode();
+      await saveAttendanceConfigToDB({}, undefined, newCode, true);
+      return NextResponse.json({
+        success: true,
+        attendanceCode: newCode,
+        codeEnabled: true,
+        message: `验证码已生成: ${newCode}`,
+      });
+    }
+
+    // 切换验证码开关
+    if (body.action === 'toggle-code') {
+      await saveAttendanceConfigToDB({}, undefined, body.enabled ? currentCode : null, body.enabled);
+      return NextResponse.json({
+        success: true,
+        codeEnabled: body.enabled,
+        attendanceCode: body.enabled ? currentCode : null,
+        message: body.enabled ? '验证码功能已开启' : '验证码功能已关闭',
+      });
+    }
+
+    // 清除验证码
+    if (body.action === 'clear-code') {
+      await saveAttendanceConfigToDB({}, undefined, null, false);
+      return NextResponse.json({
+        success: true,
+        codeEnabled: false,
+        attendanceCode: null,
+        message: '验证码已清除',
+      });
+    }
+
     // 正常点名流程
-    const { studentId, studentName, studentEmail } = body;
+    const { studentId, studentName, studentEmail, verificationCode } = body;
 
     if (!studentId || !studentName || !studentEmail) {
       return NextResponse.json(
         { error: '学生ID、姓名和邮箱必填' },
         { status: 400 }
       );
+    }
+
+    // 验证码检查
+    if (currentCodeEnabled && currentCode) {
+      if (!verificationCode) {
+        return NextResponse.json(
+          { error: '请输入点名验证码', requireCode: true },
+          { status: 400 }
+        );
+      }
+      if (verificationCode !== currentCode) {
+        return NextResponse.json(
+          { error: '验证码错误，请检查后重试', requireCode: true },
+          { status: 400 }
+        );
+      }
     }
 
     // 检查点名时间

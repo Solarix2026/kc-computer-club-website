@@ -27,7 +27,7 @@ const MOCK_NOTICES = [
 
       <h2 class="text-2xl font-bold mt-8 mb-4 text-white">活动概述</h2>
       <p class="mb-4">
-        电脑社很高兴地宣布，<strong class="text-white">2024年全球黑客马拉松</strong>报名正式开启。本次活动将汇聚来自各个学科的学生，共同协作开发解决现实问题的软件方案。无论你是经验丰富的开发者还是刚刚起步的新手，这里都有你的一席之地。
+        电脑学会很高兴地宣布，<strong class="text-white">2024年全球黑客马拉松</strong>报名正式开启。本次活动将汇聚来自各个学科的学生，共同协作开发解决现实问题的软件方案。无论你是经验丰富的开发者还是刚刚起步的新手，这里都有你的一席之地。
       </p>
       <p class="mb-4">
         今年的主题是 <span class="font-mono bg-[#1E2E25] px-1.5 py-0.5 rounded text-sm text-primary">"可持续未来"</span>。我们将挑战各团队开发针对环境可持续性、资源管理或绿色技术的应用程序。

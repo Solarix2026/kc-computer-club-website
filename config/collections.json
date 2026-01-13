@@ -828,6 +828,20 @@
           "description": "点名调试模式"
         },
         {
+          "key": "attendanceCode",
+          "type": "string",
+          "required": false,
+          "size": 10,
+          "description": "点名验证码（4位数字）"
+        },
+        {
+          "key": "attendanceCodeEnabled",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "是否启用点名验证码"
+        },
+        {
           "key": "createdAt",
           "type": "datetime",
           "required": false,

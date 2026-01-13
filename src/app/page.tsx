@@ -106,7 +106,7 @@ export default function HomePage() {
       <main className="flex-1 w-full max-w-300 mx-auto px-4 py-12 sm:px-6 lg:px-8 space-y-12">
         {/* Hero 区域 */}
         <HeroSection
-          clubName="电脑社"
+          clubName="电脑学会"
           statusText="正在招收新成员"
           activeUsers={24}
           capacityPercent={45}
@@ -138,7 +138,7 @@ export default function HomePage() {
 
       {/* 页脚 */}
       <Footer
-        clubName="电脑社"
+        clubName="电脑学会"
         description="培养学生编程能力和创新思维，推动校园信息技术教育。加入我们，一起探索技术的无限可能。"
         email="club@school.edu"
         address="304 室，科技楼"

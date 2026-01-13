@@ -24,7 +24,7 @@ interface ClubSettings {
 }
 
 const defaultSettings: ClubSettings = {
-  clubName: '康中电脑社',
+  clubName: '康中电脑学会',
   description: '我们是一群热爱科技的学生，致力于探索编程、人工智能、网络安全等领域。',
   email: 'computerclub@school.edu.my',
   location: '电脑室 A304，科学楼三楼',

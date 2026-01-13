@@ -64,7 +64,7 @@ export function Header({
             <span className="material-symbols-outlined">terminal</span>
           </div>
           <h2 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">
-            电脑社
+            电脑学会
           </h2>
         </Link>
 

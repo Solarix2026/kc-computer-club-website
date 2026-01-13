@@ -55,7 +55,7 @@ export default function AdminLoginPage() {
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">管理员登录</h1>
             <p className="text-[#7a8fa5] text-sm">
-              电脑社官网管理后台
+              电脑学会官网管理后台
             </p>
           </div>
 

@@ -55,6 +55,11 @@ export default function AttendanceRecords() {
   // 学生详情模态框
   const [selectedStudent, setSelectedStudent] = useState<StudentStats | null>(null);
   const [isLoadingStudent, setIsLoadingStudent] = useState(false);
+  
+  // 验证码相关状态
+  const [attendanceCode, setAttendanceCode] = useState<string | null>(null);
+  const [codeEnabled, setCodeEnabled] = useState(false);
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
 
   // 获取学生统计数据
   const fetchStudentStats = async (studentEmail: string, studentName: string) => {
@@ -124,13 +129,60 @@ export default function AttendanceRecords() {
   };
 
   useEffect(() => {
-    // 获取当前周数
-    const response = fetch('/api/attendance');
+    // 获取当前周数和验证码状态
+    const response = fetch('/api/attendance?action=debug-status');
     response.then((res) => res.json()).then((data) => {
-      setWeekNumber(data.weekNumber || 1);
-      fetchRecords(data.weekNumber || 1);
+      setWeekNumber(data.config?.weekNumber || 1);
+      setAttendanceCode(data.attendanceCode || null);
+      setCodeEnabled(data.codeEnabled || false);
+      // 重新获取周数
+      fetch('/api/attendance').then((res) => res.json()).then((statusData) => {
+        setWeekNumber(statusData.weekNumber || 1);
+        fetchRecords(statusData.weekNumber || 1);
+      });
     });
   }, []);
+
+  // 生成新验证码
+  const handleGenerateCode = async () => {
+    setIsGeneratingCode(true);
+    try {
+      const response = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate-code' }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAttendanceCode(data.attendanceCode);
+        setCodeEnabled(true);
+      } else {
+        alert('生成验证码失败');
+      }
+    } catch (err) {
+      alert('生成验证码失败');
+    } finally {
+      setIsGeneratingCode(false);
+    }
+  };
+
+  // 清除验证码
+  const handleClearCode = async () => {
+    try {
+      const response = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clear-code' }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAttendanceCode(null);
+        setCodeEnabled(false);
+      }
+    } catch (err) {
+      alert('清除验证码失败');
+    }
+  };
 
   const formatTime = (isoTime: string) => {
     const date = new Date(isoTime);
@@ -208,7 +260,7 @@ export default function AttendanceRecords() {
 
     // 组合 CSV
     const csvContent = [
-      [`电脑社点名记录 - 第${summary.weekNumber}周 - ${sessionTime}`],
+      [`电脑学会点名记录 - 第${summary.weekNumber}周 - ${sessionTime}`],
       [],
       [headers.join(',')],
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
@@ -241,6 +293,90 @@ export default function AttendanceRecords() {
 
   return (
     <div className={styles.container}>
+      {/* 验证码控制面板 */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1a2632 0%, #1e3a5f 100%)',
+        border: '1px solid rgba(19, 127, 236, 0.3)',
+        borderRadius: '16px',
+        padding: '20px',
+        marginBottom: '24px',
+      }}>
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <span className="material-symbols-outlined" style={{fontSize: '28px', color: '#137fec'}}>pin</span>
+            <div>
+              <h3 style={{margin: 0, color: 'white', fontSize: '16px', fontWeight: 600}}>点名验证码</h3>
+              <p style={{margin: '4px 0 0', color: '#8a9e94', fontSize: '13px'}}>
+                {codeEnabled ? '学生需要输入验证码才能点名' : '验证码功能已关闭'}
+              </p>
+            </div>
+          </div>
+          
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            {codeEnabled && attendanceCode && (
+              <div style={{
+                background: 'rgba(19, 127, 236, 0.15)',
+                border: '2px solid rgba(19, 127, 236, 0.5)',
+                borderRadius: '12px',
+                padding: '12px 24px',
+                textAlign: 'center',
+              }}>
+                <div style={{color: '#8a9e94', fontSize: '11px', marginBottom: '4px'}}>当前验证码</div>
+                <div style={{color: '#137fec', fontSize: '32px', fontWeight: 'bold', fontFamily: 'monospace', letterSpacing: '8px'}}>
+                  {attendanceCode}
+                </div>
+              </div>
+            )}
+            
+            <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+              <button
+                onClick={handleGenerateCode}
+                disabled={isGeneratingCode}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '10px 16px',
+                  background: '#137fec',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isGeneratingCode ? 'wait' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  opacity: isGeneratingCode ? 0.7 : 1,
+                }}
+              >
+                <span className="material-symbols-outlined" style={{fontSize: '18px'}}>refresh</span>
+                {attendanceCode ? '刷新验证码' : '生成验证码'}
+              </button>
+              
+              {codeEnabled && (
+                <button
+                  onClick={handleClearCode}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '10px 16px',
+                    background: 'transparent',
+                    color: '#ff7b72',
+                    border: '1px solid rgba(255, 123, 114, 0.3)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{fontSize: '18px'}}>close</span>
+                  关闭验证码
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className={styles.header}>
         <h2><span className="material-symbols-outlined" style={{fontSize: '28px', marginRight: '8px', verticalAlign: 'middle', color: '#137fec'}}>bar_chart</span>点名记录</h2>
         <div className={styles.weekSelector}>

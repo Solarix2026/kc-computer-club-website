@@ -39,7 +39,7 @@ interface AttendanceConfig {
 
 // 模拟社团设置数据
 const MOCK_SETTINGS: ClubSettings = {
-  aboutTitle: '康中电脑社',
+  aboutTitle: '康中电脑学会',
   aboutDescription: '我们是一群热爱科技的学生，致力于探索编程、人工智能、网络安全等领域。无论你是编程新手还是技术大神，都欢迎加入我们！',
   aboutEmail: 'computerclub@school.edu.my',
   aboutLocation: '电脑室 A304，科学楼三楼',
@@ -501,7 +501,7 @@ export default function AdminSettings() {
               id="aboutTitle"
               value={settings.aboutTitle || ''}
               onChange={(e) => handleSettingChange('aboutTitle', e.target.value)}
-              placeholder="例如: 康中电脑社"
+              placeholder="例如: 康中电脑学会"
             />
           </div>
 

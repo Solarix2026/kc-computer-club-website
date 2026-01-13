@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 // 默认社团信息
 const DEFAULT_CLUB_INFO = {
-  name: '康中电脑社',
+  name: '康中电脑学会',
   description:
     '我们是一群热爱科技的学生，致力于探索编程、人工智能、网络安全等领域。无论你是编程新手还是技术大神，都欢迎加入我们！',
   email: 'computerclub@school.edu.my',

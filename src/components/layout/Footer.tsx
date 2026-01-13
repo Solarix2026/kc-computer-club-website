@@ -82,7 +82,7 @@ const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
 };
 
 export function Footer({
-  clubName = '电脑社',
+  clubName = '电脑学会',
   description = '推动学校信息技术教育，培养学生编程能力和创新思维。加入我们，一起探索技术的无限可能。',
   quickLinks = defaultQuickLinks,
   socialLinks = defaultSocialLinks,

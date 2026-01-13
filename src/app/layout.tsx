@@ -14,8 +14,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "电脑社 - Tech & Code Society",
-  description: "学校电脑社官网 - 培养编程能力，探索技术无限可能",
+  title: "电脑学会 - Tech & Code Society",
+  description: "学校电脑学会官网 - 培养编程能力，探索技术无限可能",
 };
 
 export default function RootLayout({

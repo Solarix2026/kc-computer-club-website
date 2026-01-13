@@ -12,6 +12,8 @@ interface AttendanceStatus {
   message: string;
   weekNumber: number;
   debugMode?: boolean;
+  codeEnabled?: boolean;
+  hasCode?: boolean;
   config?: {
     dayOfWeek: number;
     session1Start: { hour: number; minute: number };
@@ -42,6 +44,8 @@ export default function AttendanceWidget({
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [debugMode, setDebugMode] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [requireCode, setRequireCode] = useState(false);
 
   // 获取点名状态
   const fetchAttendanceStatus = async () => {
@@ -50,6 +54,12 @@ export default function AttendanceWidget({
       const data = await response.json();
       setStatus(data);
       setDebugMode(data.debugMode || false);
+      // 如果开启了验证码功能，显示验证码输入框
+      if (data.codeEnabled && data.hasCode) {
+        setRequireCode(true);
+      } else {
+        setRequireCode(false);
+      }
       setError('');
     } catch (err) {
       const error = err as Error & { message?: string };
@@ -104,12 +114,17 @@ export default function AttendanceWidget({
           studentId,
           studentName,
           studentEmail,
+          verificationCode: requireCode ? verificationCode : undefined,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        // 如果需要验证码
+        if (data.requireCode) {
+          setRequireCode(true);
+        }
         setError(data.error || '点名失败');
         setIsLoading(false);
         return;
@@ -117,6 +132,7 @@ export default function AttendanceWidget({
 
       setMessage(`点名成功！时段: ${data.record.sessionTime}`);
       setHasCheckedIn(true);
+      setVerificationCode(''); // 清除验证码
       onCheckInSuccess?.();
 
       // 5秒后清除成功消息
@@ -201,15 +217,38 @@ export default function AttendanceWidget({
                 </div>
               </div>
 
+              {/* 验证码输入框 */}
+              {requireCode && !hasCheckedIn && (
+                <div className="bg-[#102219] border border-amber-500/30 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="material-symbols-outlined text-amber-400">pin</span>
+                    <p className="text-amber-400 font-medium">请输入验证码</p>
+                  </div>
+                  <input
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="输入4位验证码"
+                    maxLength={4}
+                    className="w-full px-4 py-3 bg-[#1a2c24] border border-[#2a3c34] rounded-lg text-white text-center text-2xl font-mono tracking-widest placeholder:text-[#5a6a64] focus:outline-none focus:border-amber-500/50"
+                  />
+                  <p className="text-[#8a9e94] text-xs mt-2 text-center">
+                    请向在场的管理员获取验证码
+                  </p>
+                </div>
+              )}
+
               {/* 点名按钮 */}
               <button
                 onClick={handleCheckIn}
-                disabled={isLoading || hasCheckedIn}
+                disabled={isLoading || hasCheckedIn || (requireCode && verificationCode.length !== 4)}
                 className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 flex items-center justify-center gap-2 ${
                   hasCheckedIn
                     ? 'bg-[#13ec80] text-[#102219] cursor-default'
                     : isLoading
                     ? 'bg-[#13ec80]/50 text-[#102219] cursor-wait'
+                    : (requireCode && verificationCode.length !== 4)
+                    ? 'bg-[#2a3c34] text-[#5a6a64] cursor-not-allowed'
                     : 'bg-[#13ec80] hover:bg-[#0fd673] text-[#102219] hover:shadow-[0_0_20px_rgba(19,236,128,0.4)] active:scale-[0.98]'
                 }`}
               >

@@ -32,7 +32,7 @@ interface HeroSectionProps {
 
 export function HeroSection({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  clubName: _clubName = '电脑社',
+  clubName: _clubName = '电脑学会',
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   headline: _headline = '创造未来，加入社团。',
   subheadline = '与志同道合的开发者交流，参与开源项目，在校园中引领技术前沿。',
