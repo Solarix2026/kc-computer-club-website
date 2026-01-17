@@ -250,6 +250,58 @@ export function StudentSidebar({ isOpen, onClose, onCollapsedChange }: StudentSi
               )}
             </button>
           )}
+
+          {/* 登录按钮 - 未登录时显示 */}
+          {!user && (
+            <Link
+              href="/auth/login"
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg',
+                'bg-primary/10 hover:bg-primary/20 text-primary',
+                'transition-colors group font-medium',
+                sidebarCollapsed && 'justify-center'
+              )}
+              title={sidebarCollapsed ? '登录' : undefined}
+            >
+              <span className="material-symbols-outlined text-lg flex-shrink-0">
+                login
+              </span>
+              {!sidebarCollapsed && <span>登录</span>}
+
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-2 z-50">
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 whitespace-nowrap text-primary text-sm font-medium shadow-lg">
+                    登录
+                  </div>
+                </div>
+              )}
+            </Link>
+          )}
+
+          {/* 管理员面板按钮 - 始终显示 */}
+          <Link
+            href="/admin"
+            className={cn(
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg',
+              'bg-blue-500/10 hover:bg-blue-500/20 text-blue-500',
+              'transition-colors group font-medium',
+              sidebarCollapsed && 'justify-center'
+            )}
+            title={sidebarCollapsed ? '管理面板' : undefined}
+          >
+            <span className="material-symbols-outlined text-lg flex-shrink-0">
+              admin_panel_settings
+            </span>
+            {!sidebarCollapsed && <span>管理面板</span>}
+
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-2 z-50">
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 whitespace-nowrap text-blue-400 text-sm font-medium shadow-lg">
+                  管理面板
+                </div>
+              </div>
+            )}
+          </Link>
         </div>
       </aside>
     </>
