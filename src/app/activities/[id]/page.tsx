@@ -4,8 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import { StudentLayout } from '@/components/layout/StudentLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -296,32 +295,28 @@ export default function ActivityDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#102219]">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
+      <StudentLayout>
+        <main className="flex-1 flex items-center justify-center" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
           <Loading size="lg" text="加载活动详情..." />
         </main>
-        <Footer />
-      </div>
+      </StudentLayout>
     );
   }
 
   if (!activity) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#102219]">
-        <Header />
-        <main className="flex-1 flex flex-col items-center justify-center py-20">
-          <span className="material-symbols-outlined text-6xl text-[#9db9ab] mb-4">event_busy</span>
-          <h1 className="text-2xl font-bold text-white mb-2">活动不存在</h1>
-          <p className="text-[#9db9ab] mb-6">请检查链接是否正确，或返回活动列表</p>
+      <StudentLayout>
+        <main className="flex-1 flex flex-col items-center justify-center py-20" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
+          <span className="material-symbols-outlined text-6xl mb-4" style={{ color: 'var(--text-secondary)' }}>event_busy</span>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>活动不存在</h1>
+          <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>请检查链接是否正确，或返回活动列表</p>
           <Link href="/activities">
             <Button variant="primary" leftIcon="arrow_back">
               返回活动列表
             </Button>
           </Link>
         </main>
-        <Footer />
-      </div>
+      </StudentLayout>
     );
   }
 
@@ -359,28 +354,26 @@ export default function ActivityDetailPage() {
   const deadlineStatus = getDeadlineStatus();
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#102219]">
-      <Header />
-
-      <main className="flex-1 w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <StudentLayout>
+      <main className="flex-1 w-full max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
         {/* 面包屑导航 */}
-        <nav className="flex items-center text-sm text-[#9db9ab] mb-6 font-medium">
-          <Link href="/" className="hover:text-[#13ec80] transition-colors">
+        <nav className="flex items-center text-sm mb-6 font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <Link href="/" className="transition-colors" style={{ color: 'var(--text-secondary)' }}>
             首页
           </Link>
           <span className="mx-2">/</span>
-          <Link href="/activities" className="hover:text-[#13ec80] transition-colors">
+          <Link href="/activities" className="transition-colors" style={{ color: 'var(--text-secondary)' }}>
             活动
           </Link>
           <span className="mx-2">/</span>
-          <span className="text-white truncate max-w-50">{activity.title}</span>
+          <span style={{ color: 'var(--foreground)' }} className="truncate max-w-50">{activity.title}</span>
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* 左侧：活动详情 */}
           <div className="lg:col-span-7">
             {/* 详情卡片 */}
-            <div className="bg-[#1A2C23] rounded-xl shadow-sm overflow-hidden border border-[#283930]">
+            <div className="rounded-xl shadow-sm overflow-hidden border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
               {/* Hero 图片 */}
               <div
                 className="h-48 md:h-64 w-full bg-cover bg-center relative"
@@ -413,45 +406,45 @@ export default function ActivityDetailPage() {
 
               <div className="p-6 md:p-8">
                 {/* 元信息栏 */}
-                <div className="flex flex-wrap gap-y-4 gap-x-8 pb-6 border-b border-[#283930] mb-6">
+                <div className="flex flex-wrap gap-y-4 gap-x-8 pb-6 border-b mb-6" style={{ borderColor: 'var(--border)' }}>
                   <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-full bg-[#13ec80]/10 flex items-center justify-center text-[#13ec80]">
+                    <div className="size-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary) / 0.2', color: 'var(--primary)' }}>
                       <span className="material-symbols-outlined">schedule</span>
                     </div>
                     <div>
-                      <p className="text-xs text-[#9db9ab] font-medium uppercase">日期时间</p>
-                      <p className="text-sm font-semibold text-white">
+                      <p className="text-xs font-medium uppercase" style={{ color: 'var(--text-secondary)' }}>日期时间</p>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
                         {formatDateTime(activity.startTime)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-full bg-[#13ec80]/10 flex items-center justify-center text-[#13ec80]">
+                    <div className="size-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary) / 0.2', color: 'var(--primary)' }}>
                       <span className="material-symbols-outlined">location_on</span>
                     </div>
                     <div>
-                      <p className="text-xs text-[#9db9ab] font-medium uppercase">地点</p>
-                      <p className="text-sm font-semibold text-white">{activity.location}</p>
+                      <p className="text-xs font-medium uppercase" style={{ color: 'var(--text-secondary)' }}>地点</p>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{activity.location}</p>
                     </div>
                   </div>
                   {activity.organizer && (
                     <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-full bg-[#13ec80]/10 flex items-center justify-center text-[#13ec80]">
+                      <div className="size-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary) / 0.2', color: 'var(--primary)' }}>
                         <span className="material-symbols-outlined">person</span>
                       </div>
                       <div>
-                        <p className="text-xs text-[#9db9ab] font-medium uppercase">组织者</p>
-                        <p className="text-sm font-semibold text-white">{activity.organizer}</p>
+                        <p className="text-xs font-medium uppercase" style={{ color: 'var(--text-secondary)' }}>组织者</p>
+                        <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{activity.organizer}</p>
                       </div>
                     </div>
                   )}
                   <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-full bg-[#13ec80]/10 flex items-center justify-center text-[#13ec80]">
+                    <div className="size-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary) / 0.2', color: 'var(--primary)' }}>
                       <span className="material-symbols-outlined">event</span>
                     </div>
                     <div>
-                      <p className="text-xs text-[#9db9ab] font-medium uppercase">报名截止</p>
-                      <p className={`text-sm font-semibold ${deadlineStatus.color}`}>{deadlineStatus.text}</p>
+                      <p className="text-xs font-medium uppercase" style={{ color: 'var(--text-secondary)' }}>报名截止</p>
+                      <p className="text-sm font-semibold" style={{ color: deadlineStatus.color === 'text-red-400' ? '#ff6b6b' : deadlineStatus.color === 'text-amber-400' ? '#ffd43b' : 'var(--primary)' }}>{deadlineStatus.text}</p>
                     </div>
                   </div>
                 </div>
@@ -460,35 +453,36 @@ export default function ActivityDetailPage() {
                 {activity.maxParticipants > 0 && (
                   <div className="mb-6">
                     <div className="flex justify-between text-sm mb-2">
-                      <span className="text-[#9db9ab]">报名进度</span>
-                      <span className="text-white font-medium">
+                      <span style={{ color: 'var(--text-secondary)' }}>报名进度</span>
+                      <span className="font-medium" style={{ color: 'var(--foreground)' }}>
                         {activity.currentParticipants}/{activity.maxParticipants} ({capacityPercent}%)
                       </span>
                     </div>
-                    <div className="w-full h-2 bg-[#283930] rounded-full overflow-hidden">
+                    <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
                       <div
-                        className={`h-full rounded-full transition-all ${
-                          capacityPercent >= 100 ? 'bg-red-500' : 'bg-[#13ec80]'
-                        }`}
-                        style={{ width: `${Math.min(capacityPercent, 100)}%` }}
+                        className={`h-full rounded-full transition-all`}
+                        style={{ 
+                          width: `${Math.min(capacityPercent, 100)}%`,
+                          backgroundColor: capacityPercent >= 100 ? '#ff6b6b' : 'var(--primary)'
+                        }}
                       />
                     </div>
                   </div>
                 )}
 
                 {/* 描述内容 */}
-                <div className="prose prose-sm prose-invert max-w-none text-gray-300">
-                  <p>{activity.description}</p>
+                <div className="prose prose-sm max-w-none">
+                  <p style={{ color: 'var(--foreground)' }}>{activity.description}</p>
 
-                  <h4 className="text-white font-bold mt-6 mb-3">活动须知：</h4>
-                  <ul className="list-disc pl-5 space-y-1 marker:text-[#13ec80]">
+                  <h4 className="font-bold mt-6 mb-3" style={{ color: 'var(--foreground)' }}>活动须知：</h4>
+                  <ul className="list-disc pl-5 space-y-1 marker:text-primary" style={{ color: 'var(--text-secondary)' }}>
                     <li>请准时到达活动地点</li>
                     <li>携带必要的设备（如工作坊需要笔记本电脑）</li>
                     <li>如需取消报名，请提前24小时通知</li>
                   </ul>
 
                   {activity.category === '工作坊' && (
-                    <p className="mt-4 text-sm bg-amber-500/10 text-amber-200 p-3 rounded-lg border border-amber-500/20 flex items-start gap-2">
+                    <p className="mt-4 text-sm p-3 rounded-lg border flex items-start gap-2" style={{ backgroundColor: 'var(--primary) / 0.1', borderColor: 'var(--primary) / 0.3', color: 'var(--primary)' }}>
                       <span className="material-symbols-outlined text-lg">info</span>
                       <span>工作坊期间请保持安静，尊重讲师和其他参与者。</span>
                     </p>
@@ -498,18 +492,19 @@ export default function ActivityDetailPage() {
             </div>
 
             {/* 评论部分 */}
-            <div className="mt-8 bg-[#1A2C23] rounded-xl shadow-sm overflow-hidden border border-[#283930] p-6 md:p-8">
+            <div className="mt-8 rounded-xl shadow-sm overflow-hidden border p-6 md:p-8" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="size-10 rounded-full bg-[#13ec80]/10 flex items-center justify-center text-[#13ec80]">
+                <div className="size-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary) / 0.2', color: 'var(--primary)' }}>
                   <span className="material-symbols-outlined">comment</span>
                 </div>
-                <h3 className="text-xl font-bold text-white">活动评论</h3>
-                <span className="text-sm text-[#9db9ab] ml-auto">
+                <h3 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>活动评论</h3>
+                <span className="text-sm ml-auto" style={{ color: 'var(--text-secondary)' }}>
                   {comments.length} 条评论
                 </span>
                 <button
                   onClick={() => setShowComments(!showComments)}
-                  className="p-2 hover:bg-[#283930] rounded-lg transition-colors text-[#13ec80]"
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: 'var(--primary)' }}
                   title={showComments ? '隐藏评论' : '显示评论'}
                 >
                   <span className="material-symbols-outlined">
@@ -537,8 +532,8 @@ export default function ActivityDetailPage() {
                       </div>
 
                       {/* 评论表单 */}
-                      <div className="border-t border-[#283930] pt-6">
-                        <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                      <div className="border-t pt-6" style={{ borderColor: 'var(--border)' }}>
+                        <h4 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
                           <span className="material-symbols-outlined text-lg">edit_note</span>
                           发表评论
                         </h4>
@@ -558,7 +553,8 @@ export default function ActivityDetailPage() {
             <div className="mt-6">
               <Link
                 href="/activities"
-                className="inline-flex items-center gap-2 text-sm font-medium text-[#9db9ab] hover:text-[#13ec80] transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
               >
                 <span className="material-symbols-outlined text-lg">arrow_back</span>
                 返回活动列表
@@ -571,44 +567,45 @@ export default function ActivityDetailPage() {
             <div className="sticky top-24">
               {!user ? (
                 // 未登录提示
-                <div className="bg-[#1A2C23] rounded-xl shadow-sm border border-[#283930] p-6 md:p-8 text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#13ec80]/10 mb-4">
-                    <span className="material-symbols-outlined text-[#13ec80] text-4xl">lock</span>
+                <div className="rounded-xl shadow-sm border p-6 md:p-8 text-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ backgroundColor: 'var(--primary) / 0.2' }}>
+                    <span className="material-symbols-outlined text-4xl" style={{ color: 'var(--primary)' }}>lock</span>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">需要登录才能报名</h3>
-                  <p className="text-[#9db9ab] mb-6 text-sm">
+                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>需要登录才能报名</h3>
+                  <p className="mb-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
                     请先登录或注册账号，然后就可以报名这个活动
                   </p>
                   <div className="flex flex-col gap-3">
                     <Link
                       href="/auth/login"
-                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#13ec80] px-4 py-3 text-black font-medium hover:bg-[#0fd673] transition-colors w-full"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium transition-colors w-full"
+                      style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
                     >
                       <span className="material-symbols-outlined">login</span>
                       登录账号
                     </Link>
                     <Link
                       href="/auth/signup"
-                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#13ec80]/10 px-4 py-3 text-[#13ec80] font-medium hover:bg-[#13ec80]/20 transition-colors w-full"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium transition-colors w-full"
+                      style={{ backgroundColor: 'var(--primary) / 0.2', color: 'var(--primary)' }}
                     >
                       <span className="material-symbols-outlined">person_add</span>
                       创建新账号
                     </Link>
                   </div>
-                  <p className="text-xs text-[#9db9ab] mt-4">
-                    已有账号？<Link href="/auth/login" className="text-[#13ec80] hover:underline">登录</Link>
+                  <p className="text-xs mt-4" style={{ color: 'var(--text-secondary)' }}>
+                    已有账号？<Link href="/auth/login" className="hover:underline" style={{ color: 'var(--primary)' }}>登录</Link>
                   </p>
                 </div>
               ) : activity.status === 'published' ? (
-                <div className="bg-[#1A2C23] rounded-xl shadow-sm border border-[#283930] p-6 md:p-8 relative overflow-hidden">
-                  {/* 装饰线条 */}
-                  <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-[#13ec80] to-emerald-600"></div>
+                <div className="rounded-xl shadow-sm border p-6 md:p-8 relative overflow-hidden" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundImage: 'linear-gradient(to right, var(--primary), #2ecc71)' }}></div>
 
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="size-10 rounded bg-[#13ec80] flex items-center justify-center text-[#102219]">
+                    <div className="size-10 rounded flex items-center justify-center" style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}>
                       <span className="material-symbols-outlined">edit_square</span>
                     </div>
-                    <h3 className="text-xl font-bold text-white">立即报名</h3>
+                    <h3 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>立即报名</h3>
                   </div>
 
                   <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -722,12 +719,12 @@ export default function ActivityDetailPage() {
                   </form>
                 </div>
               ) : (
-                <div className="bg-[#1A2C23] rounded-xl shadow-sm border border-[#283930] p-6 md:p-8 text-center">
-                  <span className="material-symbols-outlined text-5xl text-red-400 mb-4">
+                <div className="rounded-xl shadow-sm border p-6 md:p-8 text-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <span className="material-symbols-outlined text-5xl mb-4" style={{ color: '#ff6b6b' }}>
                     event_busy
                   </span>
-                  <h3 className="text-xl font-bold text-white mb-2">报名已截止</h3>
-                  <p className="text-[#9db9ab] mb-6">
+                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>报名已截止</h3>
+                  <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
                     该活动报名已结束，请关注其他活动
                   </p>
                   <Link href="/activities">
@@ -741,8 +738,6 @@ export default function ActivityDetailPage() {
           </div>
         </div>
       </main>
-
-      <Footer />
 
       {/* Toast 通知 */}
       {showToast && (
@@ -767,6 +762,6 @@ export default function ActivityDetailPage() {
           </div>
         </div>
       )}
-    </div>
+    </StudentLayout>
   );
 }

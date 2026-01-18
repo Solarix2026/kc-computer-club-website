@@ -14,6 +14,8 @@ export interface ClubSettings {
   aboutEmail: string;
   aboutLocation: string;
   aboutMeetingTime: string;
+  website?: string;
+  logoUrl?: string;
   activeMembers: number;
   yearlyActivities: number;
   awardProjects: number;

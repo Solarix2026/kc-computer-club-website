@@ -280,7 +280,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   // 加载中状态
   if (authLoading || isLoading) {
     return (
-      <div className="relative flex min-h-screen w-full flex-col bg-[#f6f8f7] dark:bg-[#102219] overflow-x-hidden">
+      <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
         <Header
           navItems={[
             { label: '首页', href: '/' },
@@ -291,8 +291,8 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         />
         <main className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <span className="material-symbols-outlined text-4xl text-[#13ec80] animate-spin">hourglass_empty</span>
-            <p className="text-[#618975]">加载中...</p>
+            <span className="material-symbols-outlined text-4xl animate-spin" style={{ color: 'var(--primary)' }}>hourglass_empty</span>
+            <p style={{ color: 'var(--text-secondary)' }}>加载中...</p>
           </div>
         </main>
       </div>
@@ -302,7 +302,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   // 错误状态
   if (error && !project) {
     return (
-      <div className="relative flex min-h-screen w-full flex-col bg-[#f6f8f7] dark:bg-[#102219] overflow-x-hidden">
+      <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
         <Header
           navItems={[
             { label: '首页', href: '/' },
@@ -314,9 +314,9 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         <main className="flex-1 flex items-center justify-center">
           <div className="max-w-md text-center">
             <span className="material-symbols-outlined text-5xl text-red-400 mb-4">error</span>
-            <h1 className="text-2xl font-bold text-[#111814] dark:text-white mb-2">加载失败</h1>
-            <p className="text-[#618975] mb-6">{error}</p>
-            <Link href="/projects" className="text-[#13ec80] hover:underline">
+            <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>加载失败</h1>
+            <p style={{ color: 'var(--text-secondary)' }} className="mb-6">{error}</p>
+            <Link href="/projects" style={{ color: 'var(--primary)' }} className="hover:underline">
               返回项目列表
             </Link>
           </div>
@@ -326,7 +326,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-[#f6f8f7] dark:bg-[#102219] overflow-x-hidden">
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
       <Header
         navItems={[
           { label: '首页', href: '/' },
@@ -353,9 +353,9 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
 
           {/* 成功提示 */}
           {successMessage && (
-            <div className="mb-6 p-4 rounded-xl bg-[#13ec80]/10 border border-[#13ec80]/30 flex items-center gap-3">
-              <span className="material-symbols-outlined text-[#13ec80]">check_circle</span>
-              <p className="text-[#13ec80]">{successMessage}</p>
+            <div className="mb-6 p-4 rounded-xl flex items-center gap-3" style={{ backgroundColor: 'var(--success, #13ec80) / 10', borderColor: 'var(--success, #13ec80) / 30', borderWidth: '1px' }}>
+              <span className="material-symbols-outlined" style={{ color: 'var(--success, #13ec80)' }}>check_circle</span>
+              <p style={{ color: 'var(--success, #13ec80)' }}>{successMessage}</p>
             </div>
           )}
 
@@ -368,16 +368,16 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
           )}
 
           {/* 表单卡片 */}
-          <form onSubmit={handleSubmit} className="bg-white dark:bg-[#1a2c24] rounded-2xl shadow-xl dark:shadow-none border border-[#e5e8e7] dark:border-[#2a3c34] overflow-hidden">
+          <form onSubmit={handleSubmit} className="rounded-2xl shadow-xl border overflow-hidden" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
             {/* 表单头部 */}
-            <div className="p-6 border-b border-[#e5e8e7] dark:border-[#2a3c34] bg-linear-to-r from-[#13ec80]/10 to-transparent">
+            <div className="p-6 border-b" style={{ borderColor: 'var(--border)', backgroundImage: 'linear-gradient(to right, var(--primary) / 10%, transparent)' }}>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-[#13ec80]/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-2xl text-[#13ec80]">edit</span>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--primary) / 20' }}>
+                  <span className="material-symbols-outlined text-2xl" style={{ color: 'var(--primary)' }}>edit</span>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-[#111814] dark:text-white">编辑项目</h1>
-                  <p className="text-sm text-[#618975]">修改项目信息后点击保存</p>
+                  <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>编辑项目</h1>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>修改项目信息后点击保存</p>
                 </div>
               </div>
             </div>

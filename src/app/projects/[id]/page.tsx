@@ -207,20 +207,20 @@ export default function ProjectDetailPage() {
 
   return (
     <StudentLayout>
-      <div className="bg-[#102219] text-white py-8 px-4 md:px-10 lg:px-20">
+      <div className="py-8 px-4 md:px-10 lg:px-20" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
         <div className="max-w-7xl mx-auto">
           {/* 页面头部 */}
           <div className="mb-8">
-            <div className="text-sm text-gray-400 mb-4 flex items-center gap-2">
-              <Link href="/projects" className="hover:text-white">项目</Link>
+            <div className="text-sm mb-4 flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+              <Link href="/projects" className="hover:text-[var(--primary)]">项目</Link>
               <span className="material-symbols-outlined">chevron_right</span>
               <span>{project.title}</span>
             </div>
 
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
               <div className="flex-1">
-                <h1 className="text-3xl md:text-4xl font-black mb-2 text-white">{project.title}</h1>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-4">
+                <h1 className="text-3xl md:text-4xl font-black mb-2" style={{ color: 'var(--foreground)' }}>{project.title}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
                   <p>修改于 {formatDate(project.updatedAt)}</p>
                   <span className="size-1 bg-gray-600 rounded-full"></span>
                   <p>创建于 {formatDate(project.createdAt)}</p>
@@ -230,7 +230,7 @@ export default function ProjectDetailPage() {
                   <span className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium ${getStatusColor(project.status)}`}>
                     {getStatusLabel(project.status)}
                   </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-lg bg-white/10 text-white text-sm font-medium">
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--foreground)' }}>
                     {getCategoryLabel(project.category)}
                   </span>
                 </div>

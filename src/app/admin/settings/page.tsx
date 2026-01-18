@@ -16,6 +16,9 @@ interface ClubSettings {
   aboutEmail?: string;
   aboutLocation?: string;
   aboutMeetingTime?: string;
+  // 网站外观
+  website?: string;
+  logoUrl?: string;
   // 统计数据
   activeMembers?: number;
   yearlyActivities?: number;
@@ -44,6 +47,8 @@ const MOCK_SETTINGS: ClubSettings = {
   aboutEmail: 'computerclub@school.edu.my',
   aboutLocation: '电脑室 A304，科学楼三楼',
   aboutMeetingTime: '每周五 下午 4:00 - 6:00',
+  website: 'https://computerclub.school.edu.my',
+  logoUrl: '',
   activeMembers: 50,
   yearlyActivities: 20,
   awardProjects: 10,
@@ -175,6 +180,8 @@ export default function AdminSettings() {
         if (data.aboutEmail) clubSettings.aboutEmail = data.aboutEmail;
         if (data.aboutLocation) clubSettings.aboutLocation = data.aboutLocation;
         if (data.aboutMeetingTime) clubSettings.aboutMeetingTime = data.aboutMeetingTime;
+        if (data.website) clubSettings.website = data.website;
+        if (data.logoUrl) clubSettings.logoUrl = data.logoUrl;
         if (data.activeMembers) clubSettings.activeMembers = data.activeMembers;
         if (data.yearlyActivities) clubSettings.yearlyActivities = data.yearlyActivities;
         if (data.awardProjects) clubSettings.awardProjects = data.awardProjects;
@@ -558,6 +565,61 @@ export default function AdminSettings() {
                   placeholder="例如: 每周五 下午 4:00 - 6:00"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* 网站外观 - 新增 */}
+          <div className="bg-[#1a2632] border border-[#283946] rounded-2xl p-6">
+            <h3 className="text-white font-semibold mb-4">网站外观</h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="website" className="block text-gray-400 text-sm font-medium mb-2">
+                  官方网站 URL
+                </label>
+                <Input
+                  id="website"
+                  type="url"
+                  value={settings.website || ''}
+                  onChange={(e) => handleSettingChange('website', e.target.value)}
+                  placeholder="例如: https://computerclub.school.edu.my"
+                />
+                <p className="text-gray-500 text-xs mt-1">社团官方网站链接</p>
+              </div>
+              <div>
+                <label htmlFor="logoUrl" className="block text-gray-400 text-sm font-medium mb-2">
+                  Logo URL
+                </label>
+                <Input
+                  id="logoUrl"
+                  type="url"
+                  value={settings.logoUrl || ''}
+                  onChange={(e) => handleSettingChange('logoUrl', e.target.value)}
+                  placeholder="例如: https://example.com/logo.png"
+                />
+                <p className="text-gray-500 text-xs mt-1">建议尺寸：200x200 像素，支持 PNG、SVG、JPG 格式</p>
+              </div>
+
+              {/* Logo 预览 */}
+              {settings.logoUrl && (
+                <div className="p-4 bg-[#1f2d39] rounded-lg border border-[#283946]">
+                  <p className="text-gray-400 text-sm mb-3">Logo 预览</p>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-[#0d1117] flex items-center justify-center overflow-hidden">
+                      <img 
+                        src={settings.logoUrl} 
+                        alt="Logo 预览" 
+                        className="max-w-full max-h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      <p>在导航栏和页脚显示</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

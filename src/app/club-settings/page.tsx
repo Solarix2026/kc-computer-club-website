@@ -295,6 +295,12 @@ export default function ClubSettings() {
 
                     <div className="space-y-4">
                       <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>官方网站</label>
+                        <Input type="url" value={settings.website} onChange={(e) => handleInputChange('website', e.target.value)} disabled={!isEditing} leftIcon="language" placeholder="https://example.com" />
+                        <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>社团官方网站 URL</p>
+                      </div>
+
+                      <div>
                         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>网站 Logo 链接</label>
                         <Input type="url" value={settings.logoUrl} onChange={(e) => handleInputChange('logoUrl', e.target.value)} disabled={!isEditing} leftIcon="image" placeholder="https://example.com/logo.png" />
                         <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>建议尺寸：200x200 像素，支持 PNG、SVG、JPG 格式</p>

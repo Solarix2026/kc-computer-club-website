@@ -4,8 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import { StudentLayout } from '@/components/layout/StudentLayout';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { ImageCarousel } from '@/components/notices/ImageCarousel';
@@ -272,32 +271,28 @@ export default function NoticeDetailPage() {
     }
   }, [notice?.$id]);  if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#102219]">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
+      <StudentLayout>
+        <main className="flex-1 flex items-center justify-center" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
           <Loading size="lg" text="加载公告详情..." />
         </main>
-        <Footer />
-      </div>
+      </StudentLayout>
     );
   }
 
   if (!notice || error) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#102219]">
-        <Header />
-        <main className="flex-1 flex flex-col items-center justify-center py-20">
-          <span className="material-symbols-outlined text-6xl text-[#9db9ab] mb-4">article_shortcut</span>
-          <h1 className="text-2xl font-bold text-white mb-2">{error || '公告不存在'}</h1>
-          <p className="text-[#9db9ab] mb-6">请检查链接是否正确，或返回公告列表</p>
+      <StudentLayout>
+        <main className="flex-1 flex flex-col items-center justify-center py-20" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
+          <span className="material-symbols-outlined text-6xl mb-4" style={{ color: 'var(--text-secondary)' }}>article_shortcut</span>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>{error || '公告不存在'}</h1>
+          <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>请检查链接是否正确，或返回公告列表</p>
           <Link href="/notices">
             <Button variant="primary" leftIcon="arrow_back">
               返回公告列表
             </Button>
           </Link>
         </main>
-        <Footer />
-      </div>
+      </StudentLayout>
     );
   }
 
@@ -305,25 +300,23 @@ export default function NoticeDetailPage() {
   // const categoryStyle = CATEGORY_STYLES[notice.category] || CATEGORY_STYLES.general;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#102219]">
-      <Header />
-
-      <main className="flex-1 w-full mx-auto py-8">
+    <StudentLayout>
+      <main className="flex-1 w-full mx-auto py-8" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* 左侧：文章内容 */}
             <article className="flex-1 min-w-0">
               {/* 面包屑导航 */}
-              <nav className="flex items-center text-sm text-[#9db9ab] mb-6 font-medium">
-                <Link href="/" className="hover:text-[#13ec80] transition-colors">
+              <nav className="flex items-center text-sm mb-6 font-medium" style={{ color: 'var(--text-secondary)' }}>
+                <Link href="/" className="transition-colors" style={{ color: 'var(--text-secondary)' }}>
                   首页
                 </Link>
                 <span className="mx-2">/</span>
-                <Link href="/notices" className="hover:text-[#13ec80] transition-colors">
+                <Link href="/notices" className="transition-colors" style={{ color: 'var(--text-secondary)' }}>
                   公告
                 </Link>
                 <span className="mx-2">/</span>
-                <span className="text-white truncate max-w-50">{notice.title}</span>
+                <span style={{ color: 'var(--foreground)' }} className="truncate max-w-50">{notice.title}</span>
               </nav>
 
               {/* 文章头部 */}
@@ -344,12 +337,12 @@ export default function NoticeDetailPage() {
                 </div>
 
                 {/* 标题 */}
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight mb-4 tracking-[-0.02em]">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-black leading-tight mb-4 tracking-[-0.02em]" style={{ color: 'var(--foreground)' }}>
                   {notice.title}
                 </h1>
 
                 {/* 元信息 */}
-                <div className="flex items-center gap-4 text-sm text-[#9db9ab] flex-wrap">
+                <div className="flex items-center gap-4 text-sm flex-wrap" style={{ color: 'var(--text-secondary)' }}>
                   <div className="flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-[18px]">calendar_today</span>
                     <span>{new Date(notice.createdAt).toLocaleDateString('zh-CN')}</span>
@@ -368,7 +361,7 @@ export default function NoticeDetailPage() {
 
                 {/* 最后编辑者信息 */}
                 {notice.lastEditorName && (
-                  <div className="mt-4 pt-4 border-t border-[#283930] text-xs text-[#9db9ab]">
+                  <div className="mt-4 pt-4 text-xs" style={{ borderTopColor: 'var(--border)', borderTopWidth: '1px', color: 'var(--text-secondary)' }}>
                     <span>最后编辑：{notice.lastEditorName}</span>
                     {notice.updatedAt && notice.updatedAt !== notice.createdAt && (
                       <span> • {new Date(notice.updatedAt).toLocaleDateString('zh-CN')}</span>
@@ -386,15 +379,17 @@ export default function NoticeDetailPage() {
 
               {/* 文章内容 */}
               <div
-                className="prose prose-lg prose-invert max-w-none text-[#E0E0E0] wrap-break-word whitespace-normal [&_a]:text-primary [&_a]:no-underline hover:[&_a]:underline [&_strong]:text-white [&_code]:bg-[#1E2E25] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:text-primary [&_p]:mb-4 [&_p]:wrap-break-word [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:wrap-break-word [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-white [&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:wrap-break-word [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_li]:text-[#E0E0E0] [&_li]:wrap-break-word [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:bg-[#1A2C23] [&_blockquote]:p-4 [&_blockquote]:rounded-r-lg [&_blockquote]:my-8 [&_blockquote]:wrap-break-word"
+                className="prose prose-lg max-w-none wrap-break-word whitespace-normal [&_a]:text-primary [&_a]:no-underline hover:[&_a]:underline [&_strong]:font-bold [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:text-primary [&_p]:mb-4 [&_p]:wrap-break-word [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:wrap-break-word [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:wrap-break-word [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_li]:wrap-break-word [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:p-4 [&_blockquote]:rounded-r-lg [&_blockquote]:my-8 [&_blockquote]:wrap-break-word"
+                style={{ color: 'var(--foreground)' }}
                 dangerouslySetInnerHTML={{ __html: notice.content }}
               />
 
               {/* 底部互动区域 */}
-              <div className="flex items-center justify-between pt-8 border-t border-[#283930] flex-wrap gap-4">
+              <div className="flex items-center justify-between pt-8 flex-wrap gap-4" style={{ borderTopColor: 'var(--border)', borderTopWidth: '1px' }}>
                 <Link
                   href="/notices"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-[#9db9ab] hover:text-[#13ec80] transition-colors"
+                  className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   <span className="material-symbols-outlined text-lg">arrow_back</span>
                   返回公告列表
@@ -403,11 +398,11 @@ export default function NoticeDetailPage() {
                   {/* 复制链接 */}
                   <button
                     title="复制链接"
-                    className={`p-2 rounded-full transition-colors ${
-                      copySuccess
-                        ? 'text-[#13ec80] bg-[#13ec80]/10'
-                        : 'text-[#9db9ab] hover:text-[#13ec80] hover:bg-[#13ec80]/10'
-                    }`}
+                    className="p-2 rounded-full transition-colors"
+                    style={{
+                      color: copySuccess ? 'var(--primary)' : 'var(--text-secondary)',
+                      backgroundColor: copySuccess ? 'var(--primary-light)' : 'transparent'
+                    }}
                     onClick={handleCopyLink}
                   >
                     <span className="material-symbols-outlined text-[20px]">
@@ -418,18 +413,35 @@ export default function NoticeDetailPage() {
                   {/* 打印 */}
                   <button
                     title="打印公告"
-                    className="p-2 rounded-full text-[#9db9ab] hover:text-[#13ec80] hover:bg-[#13ec80]/10 transition-colors"
+                    className="p-2 rounded-full transition-colors"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--primary)';
+                      e.currentTarget.style.backgroundColor = 'var(--primary-light)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                     onClick={handlePrint}
                   >
                     <span className="material-symbols-outlined text-[20px]">print</span>
                   </button>
                   
-                  {/* 分享到微信 */}
+                  {/* 分享 */}
                   <button
                     title="分享"
-                    className="p-2 rounded-full text-[#9db9ab] hover:text-[#13ec80] hover:bg-[#13ec80]/10 transition-colors"
+                    className="p-2 rounded-full transition-colors"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--primary)';
+                      e.currentTarget.style.backgroundColor = 'var(--primary-light)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                     onClick={() => {
-                      // 可集成QR代码或分享弹窗
                       alert('分享链接：' + window.location.href);
                     }}
                   >
@@ -443,54 +455,55 @@ export default function NoticeDetailPage() {
             <aside className="hidden lg:block w-80 shrink-0">
               <div className="sticky top-24 space-y-8">
                 {/* 相关公告 */}
-                <div className="bg-[#1A2C23] rounded-xl border border-[#283930] p-5 shadow-sm">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#9db9ab] mb-4">
+                <div className="rounded-xl border p-5 shadow-sm" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-secondary)' }}>
                     相关公告
                   </h3>
                   <div className="space-y-4">
                     {relatedNotices.length > 0 ? (
                       relatedNotices.map((relatedNotice, index) => (
                         <div key={relatedNotice.$id}>
-                          {index > 0 && <hr className="border-[#283930] mb-4" />}
+                          {index > 0 && <hr className="mb-4" style={{ borderColor: 'var(--border)' }} />}
                           <Link href={`/notices/${relatedNotice.$id}`} className="block group">
-                            <span className="text-xs text-[#13ec80] mb-1 block">
+                            <span className="text-xs mb-1 block" style={{ color: 'var(--primary)' }}>
                               {new Date(relatedNotice.createdAt).toLocaleDateString('zh-CN')}
                             </span>
-                            <h4 className="text-sm font-bold text-white group-hover:text-[#13ec80] transition-colors line-clamp-2">
+                            <h4 className="text-sm font-bold transition-colors line-clamp-2" style={{ color: 'var(--foreground)' }}>
                               {relatedNotice.title}
                             </h4>
                           </Link>
                         </div>
                       ))
                     ) : (
-                      <p className="text-xs text-[#9db9ab]">暂无相关公告</p>
+                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>暂无相关公告</p>
                     )}
                   </div>
                   <Link
                     href="/notices"
-                    className="inline-block mt-4 text-xs font-bold text-[#13ec80] hover:text-white transition-colors"
+                    className="inline-block mt-4 text-xs font-bold transition-colors"
+                    style={{ color: 'var(--primary)' }}
                   >
                     查看所有公告 →
                   </Link>
                 </div>
 
                 {/* 下一个活动 */}
-                <div className="bg-linear-to-br from-[#1A2C23] to-[#102219] rounded-xl border border-[#283930] p-5 relative overflow-hidden">
-                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#13ec80]/20 blur-2xl rounded-full"></div>
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4 relative z-10">
+                <div className="rounded-xl border p-5 relative overflow-hidden" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <div className="absolute -right-4 -top-4 w-24 h-24 blur-2xl rounded-full" style={{ backgroundColor: 'var(--primary) / 0.2' }}></div>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 relative z-10" style={{ color: 'var(--foreground)' }}>
                     近期活动
                   </h3>
                   <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="bg-[#13ec80]/20 p-2 rounded-lg text-[#13ec80]">
+                      <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--primary) / 0.2', color: 'var(--primary)' }}>
                         <span className="material-symbols-outlined">code</span>
                       </div>
                       <div>
-                        <p className="text-white font-bold text-sm">代码之夜</p>
-                        <p className="text-[#9db9ab] text-xs">每周例会</p>
+                        <p className="font-bold text-sm" style={{ color: 'var(--foreground)' }}>代码之夜</p>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>每周例会</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-300 mb-4">
+                    <div className="flex items-center gap-2 text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
                       <span className="material-symbols-outlined text-[16px]">event</span>
                       <span>周五 • 下午 6:00</span>
                     </div>
@@ -506,19 +519,20 @@ export default function NoticeDetailPage() {
           </div>
 
           {/* 评论区 */}
-          <div className="mt-12 pt-8 border-t border-[#283930]">
-            <div className="bg-[#1A2C23] rounded-xl overflow-hidden">
+          <div className="mt-12 pt-8" style={{ borderTopColor: 'var(--border)', borderTopWidth: '1px' }}>
+            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: 'var(--surface)' }}>
               <div className="flex items-center gap-3 p-6 md:p-8">
-                <div className="size-10 rounded-full bg-[#13ec80]/10 flex items-center justify-center text-[#13ec80]">
+                <div className="size-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary) / 0.2', color: 'var(--primary)' }}>
                   <span className="material-symbols-outlined">comment</span>
                 </div>
-                <h3 className="text-xl font-bold text-white">公告评论</h3>
-                <span className="text-sm text-[#9db9ab] ml-auto">
+                <h3 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>公告评论</h3>
+                <span className="text-sm ml-auto" style={{ color: 'var(--text-secondary)' }}>
                   {comments.length} 条评论
                 </span>
                 <button
                   onClick={() => setShowComments(!showComments)}
-                  className="p-2 hover:bg-[#283930] rounded-lg transition-colors text-[#13ec80]"
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: 'var(--primary)' }}
                   title={showComments ? '隐藏评论' : '显示评论'}
                 >
                   <span className="material-symbols-outlined">
@@ -546,8 +560,8 @@ export default function NoticeDetailPage() {
                       </div>
 
                       {/* 评论表单 */}
-                      <div className="pt-6">
-                        <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                      <div className="pt-6" style={{ borderTopColor: 'var(--border)', borderTopWidth: '1px' }}>
+                        <h4 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
                           <span className="material-symbols-outlined text-lg">edit_note</span>
                           发表评论
                         </h4>
@@ -565,8 +579,6 @@ export default function NoticeDetailPage() {
           </div>
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </StudentLayout>
   );
 }
