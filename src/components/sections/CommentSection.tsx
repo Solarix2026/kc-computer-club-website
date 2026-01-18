@@ -213,7 +213,7 @@ export function CommentSection({
           </div>
 
           {/* 评论内容 */}
-          <div className="text-gray-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">
+          <div className="text-sm leading-relaxed mb-3 whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
             {comment.content.includes('```') ? (
               // 简单的代码块渲染
               <div>

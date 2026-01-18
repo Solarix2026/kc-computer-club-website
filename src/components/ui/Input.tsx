@@ -60,7 +60,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         return (
           <span
             className={cn(
-              'material-symbols-outlined text-[20px] text-gray-400',
+              'material-symbols-outlined text-[20px] text-[#9dabb9]',
               position === 'left' ? 'absolute left-4 top-1/2 -translate-y-1/2' : '',
               position === 'right' && onRightIconClick
                 ? 'cursor-pointer hover:text-white transition-colors'
@@ -109,12 +109,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId || undefined}
             type={type}
             className={cn(
-              // 基础样式
-              'w-full bg-gray-50 dark:bg-[#102219]',
-              'border border-gray-200 dark:border-[#2a4e3d]',
+              // 基础样式 - 强制深色主题(移除 bg-gray-50)
+              'w-full bg-[#102219]',
+              'border border-[#2a4e3d]',
               'rounded-lg px-4 py-3 text-base',
-              'text-[#111814] dark:text-white',
-              'placeholder:text-gray-400 dark:placeholder:text-[#9dabb9]',
+              'text-white',
+              'placeholder:text-[#9dabb9]',
               // Focus 样式
               'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary',
               'transition-all duration-200',

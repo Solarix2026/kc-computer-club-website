@@ -75,11 +75,11 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId || undefined}
             className={cn(
-              // 基础样式
-              'w-full bg-gray-50 dark:bg-[#102219]',
-              'border border-gray-200 dark:border-[#2a4e3d]',
+              // 基础样式 - 强制深色主题(移除 bg-gray-50)
+              'w-full bg-[#102219]',
+              'border border-[#2a4e3d]',
               'rounded-lg px-4 py-3 pr-10 text-base',
-              'text-[#111814] dark:text-white',
+              'text-white',
               'appearance-none cursor-pointer',
               // Focus 样式
               'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary',
@@ -107,7 +107,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           </select>
 
           {/* 下拉箭头图标 */}
-          <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#9dabb9] pointer-events-none">
             expand_more
           </span>
         </div>

@@ -22,7 +22,7 @@ export function CommentForm({ contentType, contentId, onCommentSubmitted }: Comm
   // 未登录提示
   if (!user) {
     return (
-      <div className="bg-[#0d1a16] border border-[#283930] rounded-lg p-6 text-center">
+      <div className="border rounded-lg p-6 text-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--foreground)' }}>
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#13ec80]/10 mb-4">
           <span className="material-symbols-outlined text-[#13ec80] text-2xl">lock</span>
         </div>
@@ -105,8 +105,8 @@ export function CommentForm({ contentType, contentId, onCommentSubmitted }: Comm
           <span className="material-symbols-outlined text-lg">person</span>
         </div>
         <div>
-          <p className="text-white font-semibold text-sm">{user.name}</p>
-          <p className="text-[#9db9ab] text-xs">{user.email}</p>
+          <p className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>{user.name}</p>
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{user.email}</p>
         </div>
       </div>
 
@@ -138,7 +138,8 @@ export function CommentForm({ contentType, contentId, onCommentSubmitted }: Comm
           onChange={(e) => setContent(e.target.value)}
           disabled={isSubmitting}
           rows={4}
-          className="w-full bg-[#0d1a16] rounded px-3 py-2 text-white placeholder-[#5a7068] focus:outline-none focus:ring-1 focus:ring-[#13ec80]/50 transition-colors resize-none text-sm"
+          className="w-full rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#13ec80]/50 transition-colors resize-none text-sm"
+          style={{ backgroundColor: 'var(--surface)', color: 'var(--foreground)', borderColor: 'var(--border)', borderWidth: '1px' }}
         />
       </div>
 

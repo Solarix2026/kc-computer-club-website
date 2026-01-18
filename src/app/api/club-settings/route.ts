@@ -77,6 +77,11 @@ export async function POST(request: Request) {
       'clubSettings'
     );
 
+    // Filter out undefined values to prevent "Unknown attribute" error
+    const sanitizedSettings = Object.fromEntries(
+      Object.entries(settings).filter(([_, value]) => value !== undefined && value !== null)
+    );
+
     let result;
     if (existing.documents && existing.documents.length > 0) {
       // Update existing
@@ -84,7 +89,7 @@ export async function POST(request: Request) {
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         'clubSettings',
         existing.documents[0].$id,
-        settings
+        sanitizedSettings
       );
     } else {
       // Create new
@@ -92,7 +97,7 @@ export async function POST(request: Request) {
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         'clubSettings',
         'unique()',
-        settings
+        sanitizedSettings
       );
     }
 
@@ -110,6 +115,17 @@ export async function POST(request: Request) {
           initUrl: '/api/init',
         },
         { status: 404 }
+      );
+    }
+
+    // Check if it's an unknown attribute error
+    if (err.message?.includes('Unknown attribute')) {
+      return Response.json(
+        {
+          error: 'Invalid document structure: ' + err.message,
+          message: 'One or more fields do not exist in the database schema. Please run the collection initialization script.',
+        },
+        { status: 400 }
       );
     }
 

@@ -62,6 +62,10 @@ async function createClubSettingsCollection() {
       { key: 'aboutLocation', type: 'string', size: 512 },
       { key: 'aboutMeetingTime', type: 'string', size: 256 },
 
+      // 网站设置
+      { key: 'website', type: 'string', size: 512 },
+      { key: 'logoUrl', type: 'string', size: 512 },
+
       // 统计数据
       { key: 'activeMembers', type: 'integer' },
       { key: 'yearlyActivities', type: 'integer' },

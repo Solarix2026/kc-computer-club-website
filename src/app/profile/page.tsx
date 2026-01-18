@@ -51,18 +51,18 @@ export default function ProfilePage() {
       fetch(`/api/admin/students/${user.id}`)
         .then(res => res.json())
         .then(data => {
-          if (!data.error) {
+          if (data.success && data.student) {
             setStudentInfo({
-              studentId: data.studentId || '',
-              chineseName: data.chineseName || user.name || '',
-              englishName: data.englishName || '',
-              classNameCn: data.classNameCn || '',
-              classNameEn: data.classNameEn || '',
-              classCode: data.classCode || '',
-              groupLevel: data.groupLevel || '',
-              position: data.position || '',
-              phone: data.phone || '',
-              instagram: data.instagram || '',
+              studentId: data.student.studentId || '',
+              chineseName: data.student.chineseName || user.name || '',
+              englishName: data.student.englishName || '',
+              classNameCn: data.student.classNameCn || '',
+              classNameEn: data.student.classNameEn || '',
+              classCode: data.student.classCode || '',
+              groupLevel: data.student.groupLevel || '',
+              position: data.student.position || '',
+              phone: data.student.phone || '',
+              instagram: data.student.instagram || '',
             });
           }
         })

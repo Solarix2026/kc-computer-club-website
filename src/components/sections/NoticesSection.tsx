@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { formatRelativeTime } from '@/lib/utils';
+import { useState, useEffect } from 'react';
 
 // ========================================
 // NoticesSection 组件

@@ -4,7 +4,7 @@
 import { useState, useEffect, use, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/Header';
+import { StudentLayout } from '@/components/layout/StudentLayout';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface TeamMember {
@@ -280,38 +280,22 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   // 加载中状态
   if (authLoading || isLoading) {
     return (
-      <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
-        <Header
-          navItems={[
-            { label: '首页', href: '/' },
-            { label: '关于', href: '/about' },
-            { label: '公告', href: '/notices' },
-            { label: '活动', href: '/activities' },
-          ]}
-        />
-        <main className="flex-1 flex items-center justify-center">
+      <StudentLayout>
+        <main className="flex-1 flex items-center justify-center" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
           <div className="flex flex-col items-center gap-4">
             <span className="material-symbols-outlined text-4xl animate-spin" style={{ color: 'var(--primary)' }}>hourglass_empty</span>
             <p style={{ color: 'var(--text-secondary)' }}>加载中...</p>
           </div>
         </main>
-      </div>
+      </StudentLayout>
     );
   }
 
   // 错误状态
   if (error && !project) {
     return (
-      <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
-        <Header
-          navItems={[
-            { label: '首页', href: '/' },
-            { label: '关于', href: '/about' },
-            { label: '公告', href: '/notices' },
-            { label: '活动', href: '/activities' },
-          ]}
-        />
-        <main className="flex-1 flex items-center justify-center">
+      <StudentLayout>
+        <main className="flex-1 flex items-center justify-center" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
           <div className="max-w-md text-center">
             <span className="material-symbols-outlined text-5xl text-red-400 mb-4">error</span>
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>加载失败</h1>
@@ -321,22 +305,13 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
             </Link>
           </div>
         </main>
-      </div>
+      </StudentLayout>
     );
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
-      <Header
-        navItems={[
-          { label: '首页', href: '/' },
-          { label: '关于', href: '/about' },
-          { label: '公告', href: '/notices' },
-          { label: '活动', href: '/activities' },
-        ]}
-      />
-
-      <main className="flex-1 p-4 py-8 lg:p-10">
+    <StudentLayout>
+      <main className="flex-1 p-4 py-8 lg:p-10" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
         <div className="max-w-3xl mx-auto">
           {/* 管理员反馈 */}
           {project?.adminFeedback && (
@@ -649,6 +624,6 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
           </form>
         </div>
       </main>
-    </div>
+    </StudentLayout>
   );
 }

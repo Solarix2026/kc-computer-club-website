@@ -123,19 +123,19 @@ function CommentItem({ comment, isAdmin, onCommentDeleted, onReplySubmitted }: C
   };
 
   return (
-    <div className="bg-[#0d1a16] rounded-lg p-3 space-y-2">
+    <div className="rounded-lg p-3 space-y-2" style={{ backgroundColor: 'var(--surface)', color: 'var(--foreground)' }}>
       {/* 评论头部：作者信息和操作按钮 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <p className="text-white font-semibold text-sm truncate">{comment.nickname}</p>
+          <p className="font-semibold text-sm truncate" style={{ color: 'var(--foreground)' }}>{comment.nickname}</p>
           {comment.email && (
-            <p className="text-[#9db9ab] text-xs truncate">({comment.email})</p>
+            <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>({comment.email})</p>
           )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
           {/* 时间显示 */}
-          <p className="text-[#9db9ab] text-xs whitespace-nowrap">
+          <p className="text-xs whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
             {new Date(comment.createdAt).toLocaleString('zh-CN', { 
               month: '2-digit', 
               day: '2-digit', 
@@ -194,14 +194,16 @@ function CommentItem({ comment, isAdmin, onCommentDeleted, onReplySubmitted }: C
               onChange={(e) => setEditContent(e.target.value)}
               disabled={isSavingEdit}
               rows={2}
-              className="w-full bg-[#0d1a16] rounded px-2 py-1 text-white placeholder-[#5a7068] focus:outline-none focus:ring-1 focus:ring-[#13ec80]/30 resize-none text-xs"
+              className="w-full rounded px-2 py-1 focus:outline-none focus:ring-1 resize-none text-xs"
+              style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--border)', borderWidth: '1px' }}
               placeholder="编辑评论..."
             />
             <div className="flex gap-1">
               <button
                 onClick={handleEdit}
                 disabled={isSavingEdit}
-                className="px-2 py-1 bg-[#13ec80] text-[#102219] font-semibold rounded text-xs hover:bg-[#0fcc6a] transition-colors disabled:opacity-50"
+                className="px-2 py-1 font-semibold rounded text-xs transition-colors disabled:opacity-50"
+                style={{ backgroundColor: 'var(--primary)', color: '#102219' }}
               >
                 {isSavingEdit ? '保存中...' : '保存'}
               </button>
@@ -212,29 +214,30 @@ function CommentItem({ comment, isAdmin, onCommentDeleted, onReplySubmitted }: C
                   setEditError('');
                 }}
                 disabled={isSavingEdit}
-                className="px-2 py-1 bg-[#283930] text-[#9db9ab] rounded text-xs hover:bg-[#1a2c23] transition-colors"
+                className="px-2 py-1 rounded text-xs transition-colors"
+                style={{ backgroundColor: 'var(--surface)', color: 'var(--text-secondary)', borderColor: 'var(--border)', borderWidth: '1px' }}
               >
                 取消
               </button>
             </div>
           </div>
         ) : (
-          <p className="text-white text-sm leading-relaxed">{comment.content}</p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>{comment.content}</p>
         )}
       </div>
 
       {/* 老师回复 */}
       {comment.reply && (
-        <div className="rounded-lg p-2 space-y-1 ml-3 border-l-2 border-l-[#13ec80] bg-[#13ec80]/5">
+        <div className="rounded-lg p-2 space-y-1 ml-3" style={{ backgroundColor: 'var(--primary) / 0.1', borderLeftColor: 'var(--primary)', borderLeftWidth: '2px' }}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[#13ec80] text-sm">check</span>
-              <p className="text-[#13ec80] font-semibold text-xs">
+              <span className="material-symbols-outlined text-sm" style={{ color: 'var(--primary)' }}>check</span>
+              <p className="font-semibold text-xs" style={{ color: 'var(--primary)' }}>
                 {comment.replyAuthor}
               </p>
             </div>
             {comment.replyAt && (
-              <p className="text-[#9db9ab] text-xs">
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                 {new Date(comment.replyAt).toLocaleString('zh-CN', { 
                   month: '2-digit', 
                   day: '2-digit', 
@@ -244,7 +247,7 @@ function CommentItem({ comment, isAdmin, onCommentDeleted, onReplySubmitted }: C
               </p>
             )}
           </div>
-          <p className="text-white pl-1 text-xs leading-relaxed">{comment.reply}</p>
+          <p className="pl-1 text-xs leading-relaxed" style={{ color: 'var(--foreground)' }}>{comment.reply}</p>
         </div>
       )}
 
@@ -339,7 +342,7 @@ function AdminReplyForm({ commentId, onReplySubmitted }: AdminReplyFormProps) {
         onChange={(e) => setReply(e.target.value)}
         disabled={isSubmitting}
         rows={2}
-        className="w-full bg-[#0d1a16] rounded px-2 py-1 text-white placeholder-[#5a7068] focus:outline-none focus:ring-1 focus:ring-[#13ec80]/30 transition-colors resize-none text-xs"
+        className="w-full rounded px-2 py-1 placeholder-[#5a7068] focus:outline-none focus:ring-1 focus:ring-[#13ec80]/30 transition-colors resize-none text-xs" style={{ backgroundColor: 'var(--surface)', color: 'var(--foreground)' }}
       />
 
       <div className="flex gap-1">

@@ -411,8 +411,8 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* 项目状态 */}
-              <div className="bg-gray-50 dark:bg-[#1a2c24] rounded-2xl p-6 border border-gray-200 dark:border-white/10">
-                <h3 className="text-lg font-bold mb-4 text-black dark:text-white">状态</h3>
+              <div className="rounded-2xl p-6 border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--foreground)' }}>状态</h3>
                 <div className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-bold ${getStatusColor(project.status)}`}>
                   {getStatusLabel(project.status)}
                 </div>
