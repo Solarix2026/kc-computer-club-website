@@ -1,11 +1,15 @@
 /* eslint-disable prettier/prettier */
 
+/* ========================================
+   管理后台 - 出席记录样式 (强制深色)
+   ======================================== */
+
 .container {
   padding: 24px;
-  background: var(--surface);
+  background: #1a2632;
   border-radius: 12px;
   margin-top: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid #2a3c54;
 }
 
 .header {
@@ -14,13 +18,13 @@
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid #2a3c54;
 }
 
 .header h2 {
   margin: 0;
   font-size: 24px;
-  color: var(--foreground);
+  color: #ffffff;
   display: flex;
   align-items: center;
 }
@@ -33,8 +37,8 @@
 
 .prevButton,
 .nextButton {
-  background: var(--primary);
-  color: var(--surface);
+  background: #137fec;
+  color: #ffffff;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -49,15 +53,15 @@
 
 .prevButton:hover,
 .nextButton:hover {
-  background: var(--primary-hover);
+  background: #0d5bc4;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(19, 236, 128, 0.4);
+  box-shadow: 0 4px 12px rgba(19, 127, 236, 0.4);
 }
 
 .weekNumber {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #8ba9c8;
   min-width: 60px;
   text-align: center;
 }
@@ -70,24 +74,24 @@
 }
 
 .summaryCard {
-  background: var(--surface-hover);
+  background: #0d1f33;
   padding: 20px;
   border-radius: 8px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid #2a3c54;
   transition: all 0.3s ease;
 }
 
 .summaryCard:hover {
-  box-shadow: 0 4px 16px var(--primary-glow);
+  box-shadow: 0 4px 16px rgba(19, 127, 236, 0.3);
   transform: translateY(-4px);
-  border-color: var(--primary);
+  border-color: #137fec;
 }
 
 .summaryCard .title {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: #8ba9c8;
   margin-bottom: 12px;
   font-weight: 500;
 }
@@ -95,13 +99,13 @@
 .summaryCard .count {
   font-size: 32px;
   font-weight: 700;
-  color: var(--primary);
+  color: #137fec;
   margin-bottom: 8px;
 }
 
 .summaryCard .label {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: #8ba9c8;
 }
 
 .section {
@@ -111,28 +115,28 @@
 .section h3 {
   font-size: 16px;
   font-weight: 600;
-  color: var(--foreground);
+  color: #ffffff;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid #2a3c54;
   display: flex;
   align-items: center;
 }
 
 .table {
-  background: var(--surface);
+  background: #1a2632;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid #2a3c54;
 }
 
 .tableHeader {
   display: grid;
   grid-template-columns: 0.8fr 1.2fr 2fr 1.5fr 1.5fr;
   gap: 0;
-  background: var(--surface-hover);
-  border-bottom: 2px solid var(--border);
+  background: #0d1f33;
+  border-bottom: 2px solid #2a3c54;
   padding: 0;
 }
 
@@ -146,12 +150,12 @@
   padding: 14px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: #8ba9c8;
   word-break: break-word;
 }
 
 .tableHeader > div {
-  color: var(--primary);
+  color: #137fec;
   font-weight: 600;
 }
 
@@ -159,12 +163,12 @@
   display: grid;
   grid-template-columns: 0.8fr 1.2fr 2fr 1.5fr 1.5fr;
   gap: 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #2a3c54;
   transition: all 0.2s ease;
 }
 
 .tableRow:hover {
-  background: var(--surface-hover);
+  background: #0d1f33;
 }
 
 .tableRow:last-child {
@@ -176,7 +180,7 @@
   display: flex;
   align-items: center;
   font-size: 13px;
-  color: var(--foreground);
+  color: #ffffff;
 }
 
 .col5 {
@@ -210,13 +214,13 @@
 .noData {
   padding: 32px 16px;
   text-align: center;
-  color: var(--text-secondary);
+  color: #8ba9c8;
   font-size: 14px;
 }
 
 .loading {
   text-align: center;
-  color: var(--text-secondary);
+  color: #8ba9c8;
   padding: 40px 20px;
   font-size: 16px;
 }
@@ -232,7 +236,7 @@
 
 .empty {
   text-align: center;
-  color: var(--text-secondary);
+  color: #8ba9c8;
   padding: 40px 20px;
   font-size: 14px;
 }
@@ -245,8 +249,8 @@
 
 .statusBtn {
   cursor: pointer;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: 1px solid #2a3c54;
+  background: #1a2632;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 11px;
@@ -255,12 +259,12 @@
   flex: 1;
   text-align: center;
   min-width: 50px;
-  color: var(--foreground);
+  color: #ffffff;
 }
 
 .statusBtn:hover:not(:disabled) {
-  border-color: var(--text-secondary);
-  background: var(--surface-hover);
+  border-color: #8ba9c8;
+  background: #0d1f33;
 }
 
 .statusBtn:disabled {
@@ -317,14 +321,14 @@
 }
 
 .modal {
-  background: var(--surface);
+  background: #1a2632;
   border-radius: 16px;
   width: 90%;
   max-width: 500px;
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--border);
+  border: 1px solid #2a3c54;
   animation: modalSlideIn 0.3s ease;
 }
 
@@ -345,7 +349,7 @@
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: var(--text-secondary);
+  color: #8ba9c8;
 }
 
 .modalLoading p {
@@ -358,8 +362,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-hover);
+  border-bottom: 1px solid #2a3c54;
+  background: #0d1f33;
   border-radius: 16px 16px 0 0;
 }
 
@@ -367,7 +371,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--foreground);
+  color: #ffffff;
   display: flex;
   align-items: center;
 }
@@ -375,7 +379,7 @@
 .closeBtn {
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: #8ba9c8;
   cursor: pointer;
   padding: 8px;
   border-radius: 8px;
@@ -386,13 +390,13 @@
 }
 
 .closeBtn:hover {
-  background: var(--border);
-  color: var(--foreground);
+  background: #2a3c54;
+  color: #ffffff;
 }
 
 .studentInfo {
   padding: 20px 24px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #2a3c54;
 }
 
 .infoRow {
@@ -407,13 +411,13 @@
 
 .label {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: #8ba9c8;
   min-width: 60px;
 }
 
 .value {
   font-size: 14px;
-  color: var(--foreground);
+  color: #ffffff;
   font-weight: 500;
 }
 
@@ -425,7 +429,7 @@
 }
 
 .statCard {
-  background: var(--surface-hover);
+  background: #0d1f33;
   border-radius: 12px;
   padding: 20px 16px;
   text-align: center;
@@ -435,25 +439,25 @@
 
 .statCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .statNumber {
   font-size: 36px;
   font-weight: 700;
   margin: 8px 0 4px;
-  color: var(--primary);
+  color: #137fec;
 }
 
 .statLabel {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: #8ba9c8;
   font-weight: 500;
 }
 
 .attendanceRate {
   padding: 16px 24px;
-  background: var(--surface-hover);
+  background: #0d1f33;
   margin: 0 24px;
   border-radius: 8px;
   display: flex;
@@ -469,19 +473,19 @@
 
 .rateTotal {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: #8ba9c8;
 }
 
 .recordsHistory {
   padding: 20px 24px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #2a3c54;
   margin-top: 16px;
 }
 
 .recordsHistory h3 {
   font-size: 14px;
   font-weight: 600;
-  color: var(--foreground);
+  color: #ffffff;
   margin: 0 0 16px 0;
   display: flex;
   align-items: center;
@@ -497,10 +501,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 12px;
-  background: var(--surface-hover);
+  background: #0d1f33;
   border-radius: 6px;
   margin-bottom: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid #2a3c54;
 }
 
 .historyItem:last-child {
@@ -509,7 +513,7 @@
 
 .historyDate {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: #8ba9c8;
 }
 
 .historyStatus {

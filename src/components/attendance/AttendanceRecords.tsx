@@ -74,6 +74,13 @@ export default function AttendanceRecords() {
   // 标记迟到相关状态
   const [isMarkingLate, setIsMarkingLate] = useState(false);
   
+  // 初始化时段相关状态
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [sessionInitStatus, setSessionInitStatus] = useState<{
+    isInitialized: boolean;
+    stats?: { total: number; pending: number; present: number; late: number; absent: number };
+  }>({ isInitialized: false });
+  
   // 状态筛选
   const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'late' | 'absent' | 'pending'>('all');
 
@@ -177,6 +184,35 @@ export default function AttendanceRecords() {
     }
   };
 
+  // 自动初始化时段（如果尚未初始化）
+  const autoInitializeSession = async (sessionTime: '15:20' | '16:35', week: number) => {
+    try {
+      // 检查该时段是否已初始化
+      const checkResponse = await fetch(`/api/attendance/initialize-session?sessionTime=${sessionTime}&weekNumber=${week}`);
+      const checkData = await checkResponse.json();
+      
+      // 如果未初始化或没有待点名学生，自动初始化
+      if (checkData.success && (!checkData.isInitialized || (checkData.stats?.total === 0))) {
+        console.log(`自动初始化时段 ${sessionTime}，第 ${week} 周...`);
+        const initResponse = await fetch('/api/attendance/initialize-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionTime,
+            weekNumber: week,
+            sessionDuration: 5,
+          }),
+        });
+        const initData = await initResponse.json();
+        if (initData.success) {
+          console.log(`✓ 时段初始化完成：${initData.summary?.newRecordsCount || 0} 名学生`);
+        }
+      }
+    } catch (err) {
+      console.error('自动初始化失败:', err);
+    }
+  };
+
   useEffect(() => {
     // 获取当前周数和验证码状态
     const response = fetch('/api/attendance?action=debug-status');
@@ -185,10 +221,18 @@ export default function AttendanceRecords() {
       setAttendanceCode(data.attendanceCode || null);
       setCodeEnabled(data.codeEnabled || false);
       // 重新获取周数
-      fetch('/api/attendance').then((res) => res.json()).then((statusData) => {
-        setWeekNumber(statusData.weekNumber || 1);
+      fetch('/api/attendance').then((res) => res.json()).then(async (statusData) => {
+        const currentWeek = statusData.weekNumber || 1;
+        setWeekNumber(currentWeek);
         setIsAttendanceOpen(statusData.isAttendanceOpen || false);
-        fetchRecords(statusData.weekNumber || 1);
+        
+        // 自动初始化两个时段
+        await autoInitializeSession('15:20', currentWeek);
+        await autoInitializeSession('16:35', currentWeek);
+        
+        // 获取记录和检查状态
+        fetchRecords(currentWeek);
+        checkSessionInitStatus('15:20');
       });
     });
     
@@ -199,6 +243,14 @@ export default function AttendanceRecords() {
       clearInterval(statusInterval);
     };
   }, []);
+
+  // 当周数改变时，自动初始化新的时段
+  useEffect(() => {
+    if (weekNumber > 0) {
+      autoInitializeSession('15:20', weekNumber);
+      autoInitializeSession('16:35', weekNumber);
+    }
+  }, [weekNumber]);
 
   // 生成新验证码
   const handleGenerateCode = async () => {
@@ -241,6 +293,57 @@ export default function AttendanceRecords() {
     }
   };
 
+  // 手动初始化/刷新时段（预填充所有学生为 pending 状态）
+  const handleInitializeSession = async (sessionTime: '15:20' | '16:35') => {
+    if (!confirm(`确定要重新初始化点名时段吗？\n时段: ${sessionTime === '15:20' ? '下午 3:15-3:30' : '下午 4:30-4:45'}\n\n这将为缺失的学生创建待点名记录（已有记录不受影响）。`)) {
+      return;
+    }
+    
+    setIsInitializing(true);
+    try {
+      const response = await fetch('/api/attendance/initialize-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionTime,
+          weekNumber,
+          sessionDuration: 5,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(`时段初始化完成！已为 ${data.summary?.newRecordsCount || 0} 名学生创建待点名记录`);
+        // 刷新数据
+        await fetchRecords(weekNumber);
+        // 更新初始化状态
+        await checkSessionInitStatus(sessionTime);
+      } else {
+        alert('初始化失败：' + (data.error || '未知错误'));
+      }
+    } catch (err) {
+      const error = err as Error & { message?: string };
+      alert('初始化失败：' + (error.message || '未知错误'));
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
+  // 检查时段初始化状态
+  const checkSessionInitStatus = async (sessionTime: string) => {
+    try {
+      const response = await fetch(`/api/attendance/initialize-session?sessionTime=${sessionTime}&weekNumber=${weekNumber}`);
+      const data = await response.json();
+      if (data.success) {
+        setSessionInitStatus({
+          isInitialized: data.isInitialized,
+          stats: data.stats,
+        });
+      }
+    } catch (err) {
+      console.error('检查初始化状态失败:', err);
+    }
+  };
+
   // 标记所有未点名学生为迟到
   const handleMarkAllLate = async (sessionTime: '15:20' | '16:35') => {
     if (!confirm(`确定要将所有未点名的学生标记为缺席吗？\n时段: ${sessionTime === '15:20' ? '下午 3:15-3:30' : '下午 4:30-4:45'}`)) {
@@ -274,8 +377,10 @@ export default function AttendanceRecords() {
     }
   };
 
-  const formatTime = (isoTime: string) => {
+  const formatTime = (isoTime: string | null) => {
+    if (!isoTime) return '-';
     const date = new Date(isoTime);
+    if (isNaN(date.getTime())) return '-';
     return date.toLocaleTimeString('zh-CN', {
       hour: '2-digit',
       minute: '2-digit',
@@ -283,8 +388,10 @@ export default function AttendanceRecords() {
     });
   };
 
-  const formatDate = (isoTime: string) => {
+  const formatDate = (isoTime: string | null) => {
+    if (!isoTime) return '-';
     const date = new Date(isoTime);
+    if (isNaN(date.getTime())) return '-';
     return date.toLocaleDateString('zh-CN');
   };
 
@@ -576,6 +683,47 @@ export default function AttendanceRecords() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
           <h3><span className="material-symbols-outlined" style={{fontSize: '20px', marginRight: '8px', verticalAlign: 'middle', color: '#137fec'}}>location_on</span>下午 3:15-3:30 点名记录</h3>
           <div style={{ display: 'flex', gap: '8px' }}>
+            {!sessionInitStatus.isInitialized && (
+              <button
+                onClick={() => handleInitializeSession('15:20')}
+                disabled={isInitializing}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  backgroundColor: isInitializing ? '#555' : '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isInitializing ? 'wait' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.3s',
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                  {isInitializing ? 'sync' : 'add_circle'}
+                </span>
+                {isInitializing ? '初始化中...' : '初始化时段'}
+              </button>
+            )}
+            {sessionInitStatus.isInitialized && sessionInitStatus.stats && sessionInitStatus.stats.pending > 0 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                color: '#10b981',
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+                已初始化 ({sessionInitStatus.stats.pending} 人待点名)
+              </div>
+            )}
             <button
               onClick={() => handleMarkAllLate('15:20')}
               disabled={isMarkingLate}
@@ -648,7 +796,11 @@ export default function AttendanceRecords() {
                   <div className={styles.col2}>{record.studentName}</div>
                   <div className={styles.col3}>{record.studentEmail}</div>
                   <div className={styles.col4}>
-                    {formatDate(record.checkInTime)} {formatTime(record.checkInTime)}
+                    {record.status === 'pending' ? (
+                      <span style={{ color: '#6e7681', fontStyle: 'italic' }}>未点名</span>
+                    ) : (
+                      <>{formatDate(record.checkInTime)} {formatTime(record.checkInTime)}</>
+                    )}
                   </div>
                   <div className={styles.col5}>
                     {updatingId === record.$id ? (

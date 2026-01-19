@@ -340,12 +340,13 @@ export async function POST(request: NextRequest) {
     // 确定当前时段
     const sessionTime = session ? session.sessionTime : (currentDebugMode ? `${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute).padStart(2, '0')}` : '15:20');
 
-    // 检查今天同一时段是否已经点过名（使用服务器端 SDK）
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // 检查是否已有点名记录（包括 pending 状态）
+    const weekNumber = getCurrentWeekNumberWithConfig(currentConfig);
+    const now = new Date();
+    const nowIso = now.toISOString();
 
+    // 查找当前时段本周的记录（不限日期，因为使用 weekNumber）
+    let existingRecord = null;
     try {
       const existingRecords = await serverDatabases.listDocuments(
         APPWRITE_DATABASE_ID,
@@ -353,59 +354,96 @@ export async function POST(request: NextRequest) {
         [
           Query.equal('studentId', studentId),
           Query.equal('sessionTime', sessionTime),
-          Query.greaterThanEqual('checkInTime', today.toISOString()),
-          Query.lessThan('checkInTime', tomorrow.toISOString()),
+          Query.equal('weekNumber', weekNumber),
+          Query.limit(1),
         ]
       );
 
       if (existingRecords.documents.length > 0) {
-        return NextResponse.json(
-          { error: `您已在 ${sessionTime} 完成点名` },
-          { status: 400 }
-        );
+        existingRecord = existingRecords.documents[0];
       }
     } catch (queryError) {
-      console.error('检查重复点名失败:', queryError);
-      // 如果查询失败，继续执行（不阻止点名）
+      console.error('检查现有记录失败:', queryError);
+      // 如果查询失败，继续执行
     }
 
-    // 使用服务器端 SDK 创建点名记录
-    const weekNumber = getCurrentWeekNumberWithConfig(currentConfig);
-    const now = new Date().toISOString();
+    // 如果已有非 pending 状态的记录，说明已点过名
+    if (existingRecord && existingRecord.status !== 'pending') {
+      return NextResponse.json(
+        { error: `您已在 ${sessionTime} 完成点名（状态：${existingRecord.status === 'present' ? '出席' : existingRecord.status === 'late' ? '迟到' : '缺席'}）` },
+        { status: 400 }
+      );
+    }
 
-    console.log('[DEBUG POST] 保存点名记录:', {
+    // 判断是否迟到：如果已经超出时段的正常窗口但仍在迟到窗口内
+    // session.minutesRemaining <= 0 表示正常窗口已结束
+    // 迟到窗口：正常窗口结束后的 5 分钟内
+    let checkInStatus: 'present' | 'late' = 'present';
+    let lateNote = '';
+    
+    if (session && session.minutesRemaining !== undefined && session.minutesRemaining <= 0) {
+      // 如果 session 存在但 minutesRemaining <= 0，说明在迟到窗口内
+      checkInStatus = 'late';
+      lateNote = '迟到点名（超过正常点名时间）';
+    }
+
+    console.log('[DEBUG POST] 点名处理:', {
       studentId,
       studentName,
       sessionTime,
       weekNumber,
-      checkInTime: now,
+      checkInTime: nowIso,
+      existingRecordId: existingRecord?.$id || null,
+      status: checkInStatus,
     });
 
-    const record = await serverDatabases.createDocument(
-      APPWRITE_DATABASE_ID,
-      ATTENDANCE_COLLECTION_ID,
-      ID.unique(),
-      {
-        studentId,
-        studentName,
-        studentEmail,
-        checkInTime: now,
-        sessionTime: sessionTime,
-        weekNumber,
-        status: 'present',
-        notes: currentDebugMode ? '[DEBUG] 调试模式点名' : '',
-        createdAt: now,
-      }
-    );
+    let record;
+    
+    if (existingRecord) {
+      // 更新现有的 pending 记录为 present/late
+      record = await serverDatabases.updateDocument(
+        APPWRITE_DATABASE_ID,
+        ATTENDANCE_COLLECTION_ID,
+        existingRecord.$id,
+        {
+          checkInTime: nowIso,
+          status: checkInStatus,
+          notes: lateNote || (currentDebugMode ? '[DEBUG] 调试模式点名' : ''),
+        }
+      );
+      console.log('[DEBUG POST] 更新 pending 记录为:', checkInStatus);
+    } else {
+      // 创建新记录（未初始化时段的情况）
+      record = await serverDatabases.createDocument(
+        APPWRITE_DATABASE_ID,
+        ATTENDANCE_COLLECTION_ID,
+        ID.unique(),
+        {
+          studentId,
+          studentName,
+          studentEmail,
+          checkInTime: nowIso,
+          sessionTime: sessionTime,
+          weekNumber,
+          status: checkInStatus,
+          notes: lateNote || (currentDebugMode ? '[DEBUG] 调试模式点名' : ''),
+          createdAt: nowIso,
+        }
+      );
+      console.log('[DEBUG POST] 创建新记录:', record.$id);
+    }
 
-    console.log('[DEBUG POST] 记录保存成功:', {
+    console.log('[DEBUG POST] 记录处理成功:', {
       id: record.$id,
       weekNumber: record.weekNumber,
+      status: record.status,
     });
+
+    const statusMessage = checkInStatus === 'late' ? '点名成功（迟到）！' : '点名成功！';
 
     return NextResponse.json({
       success: true,
-      message: '点名成功！',
+      message: statusMessage,
       record: {
         id: record.$id,
         studentName: record.studentName,

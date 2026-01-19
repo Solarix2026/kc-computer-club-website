@@ -28,7 +28,7 @@ export function StudentLayout({
   const { clubInfo } = useClub();
 
   return (
-    <div className={cn('min-h-screen bg-[var(--background)]', className)}>
+    <div className={cn('student-layout min-h-screen bg-[var(--background)]', className)}>
       {/* 侧边栏 */}
       <StudentSidebar
         isOpen={sidebarOpen}

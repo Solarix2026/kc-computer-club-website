@@ -15,10 +15,10 @@ export interface AttendanceRecord {
   studentId: string;
   studentName: string;
   studentEmail: string;
-  checkInTime: string; // ISO datetime
-  sessionTime: '15:20' | '16:35'; // 点名时段
+  checkInTime: string | null; // ISO datetime, null for pending
+  sessionTime: '15:20' | '16:35' | string; // 点名时段，支持自定义格式 HH:MM
   weekNumber: number; // 第几周
-  status: 'present' | 'absent' | 'late';
+  status: 'present' | 'absent' | 'late' | 'pending'; // pending = 等待点名
   notes?: string;
 }
 
@@ -377,11 +377,14 @@ export async function getAttendanceRecordsBySession(
       queries as unknown as string[]
     );
 
-    // 按点名时间排序（最近的在前面）
+    // 按点名时间排序（最近的在前面，pending 记录排在最后）
     const records = response.documents as unknown as AttendanceRecord[];
-    return records.sort(
-      (a, b) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime()
-    );
+    return records.sort((a, b) => {
+      // 处理 null checkInTime（pending 记录）
+      const timeA = a.checkInTime ? new Date(a.checkInTime).getTime() : 0;
+      const timeB = b.checkInTime ? new Date(b.checkInTime).getTime() : 0;
+      return timeB - timeA;
+    });
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
     console.error('获取点名记录失败:', err);
@@ -468,5 +471,126 @@ export function checkIfShouldMarkAbsent(): { shouldMarkAbsent: boolean; sessionT
   }
 
   return { shouldMarkAbsent: false };
+}
+
+/**
+ * 检查是否应该自动标记缺席（使用配置）
+ * 支持自定义时段的配置
+ */
+export function checkIfShouldMarkAbsentWithConfig(config: AttendanceConfig): { 
+  shouldMarkAbsent: boolean; 
+  sessionTime?: string;
+  minutesSinceEnd?: number;
+} {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const currentMinutes = hours * 60 + minutes;
+
+  // 第一时段结束时间
+  const session1EndMinutes = config.session1Start.hour * 60 + config.session1Start.minute + config.session1Duration;
+  // 第二时段结束时间
+  const session2EndMinutes = config.session2Start.hour * 60 + config.session2Start.minute + config.session2Duration;
+
+  // 检查是否在第一时段结束后 5 分钟内（标记缺席窗口）
+  if (currentMinutes >= session1EndMinutes && currentMinutes < session1EndMinutes + 5) {
+    const sessionTime = `${String(config.session1Start.hour).padStart(2, '0')}:${String(config.session1Start.minute).padStart(2, '0')}`;
+    return { 
+      shouldMarkAbsent: true, 
+      sessionTime,
+      minutesSinceEnd: currentMinutes - session1EndMinutes,
+    };
+  }
+
+  // 检查是否在第二时段结束后 5 分钟内（标记缺席窗口）
+  if (currentMinutes >= session2EndMinutes && currentMinutes < session2EndMinutes + 5) {
+    const sessionTime = `${String(config.session2Start.hour).padStart(2, '0')}:${String(config.session2Start.minute).padStart(2, '0')}`;
+    return { 
+      shouldMarkAbsent: true, 
+      sessionTime,
+      minutesSinceEnd: currentMinutes - session2EndMinutes,
+    };
+  }
+
+  return { shouldMarkAbsent: false };
+}
+
+/**
+ * 判断学生点名状态（是否迟到）
+ * @param sessionConfig 时段配置 { hour, minute, duration }
+ * @param checkInTime 点名时间
+ * @param lateBufferMinutes 迟到缓冲时间（默认0分钟，即时段结束后立即为迟到）
+ * @returns 'present' | 'late' | 'absent'
+ */
+export function determineCheckInStatus(
+  sessionConfig: { hour: number; minute: number; duration: number },
+  checkInTime: Date,
+  lateBufferMinutes: number = 0
+): 'present' | 'late' | 'absent' {
+  const checkInHour = checkInTime.getHours();
+  const checkInMinute = checkInTime.getMinutes();
+  const checkInTotalMinutes = checkInHour * 60 + checkInMinute;
+
+  const sessionStartMinutes = sessionConfig.hour * 60 + sessionConfig.minute;
+  const sessionEndMinutes = sessionStartMinutes + sessionConfig.duration;
+  const lateDeadlineMinutes = sessionEndMinutes + lateBufferMinutes;
+
+  // 在正常点名时间内
+  if (checkInTotalMinutes >= sessionStartMinutes && checkInTotalMinutes < sessionEndMinutes) {
+    return 'present';
+  }
+
+  // 在迟到缓冲时间内
+  if (checkInTotalMinutes >= sessionEndMinutes && checkInTotalMinutes < lateDeadlineMinutes + 5) {
+    return 'late';
+  }
+
+  // 超过迟到窗口（通常不会到达这里，因为点名入口会关闭）
+  return 'absent';
+}
+
+/**
+ * 获取时段的剩余时间（考虑迟到缓冲）
+ * @param sessionConfig 时段配置
+ * @param lateBufferMinutes 迟到缓冲时间
+ * @returns { isOpen, isLateWindow, minutesRemaining }
+ */
+export function getSessionTimeStatus(
+  sessionConfig: { hour: number; minute: number; duration: number },
+  lateBufferMinutes: number = 5
+): { isOpen: boolean; isLateWindow: boolean; minutesRemaining: number } {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTotalMinutes = currentHour * 60 + currentMinute;
+
+  const sessionStartMinutes = sessionConfig.hour * 60 + sessionConfig.minute;
+  const sessionEndMinutes = sessionStartMinutes + sessionConfig.duration;
+  const lateDeadlineMinutes = sessionEndMinutes + lateBufferMinutes;
+
+  // 在正常点名时间内
+  if (currentTotalMinutes >= sessionStartMinutes && currentTotalMinutes < sessionEndMinutes) {
+    return {
+      isOpen: true,
+      isLateWindow: false,
+      minutesRemaining: sessionEndMinutes - currentTotalMinutes,
+    };
+  }
+
+  // 在迟到缓冲时间内
+  if (currentTotalMinutes >= sessionEndMinutes && currentTotalMinutes < lateDeadlineMinutes) {
+    return {
+      isOpen: true,
+      isLateWindow: true,
+      minutesRemaining: lateDeadlineMinutes - currentTotalMinutes,
+    };
+  }
+
+  // 不在点名时间
+  return {
+    isOpen: false,
+    isLateWindow: false,
+    minutesRemaining: 0,
+  };
 }
 

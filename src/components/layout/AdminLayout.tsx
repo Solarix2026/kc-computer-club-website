@@ -91,7 +91,7 @@ export function AdminLayout({
   };
 
   return (
-    <div className={cn('flex min-h-screen bg-[#0d1117]', className)}>
+    <div className={cn('admin-layout flex min-h-screen bg-[#0d1117] dark', className)} style={{colorScheme: 'dark'}}>
       {/* 移动端侧边栏遮罩 */}
       {sidebarOpen && (
         <div
@@ -149,7 +149,7 @@ export function AdminLayout({
                     : 'text-gray-400 hover:bg-[#161b22] hover:text-white'
                 )}
               >
-                <span className="material-symbols-outlined text-lg">
+                <span className="material-symbols-outlined text-lg flex items-center justify-center" style={{fontSize: '22px', lineHeight: 1}}>
                   {item.icon}
                 </span>
                 {item.label}
