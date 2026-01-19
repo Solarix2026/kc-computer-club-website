@@ -97,7 +97,7 @@ export function StudentSidebar({ isOpen, onClose, onCollapsedChange }: StudentSi
                   电脑学会
                 </h2>
                 <p className="text-xs text-[var(--text-secondary)] truncate">
-                  学生版
+                  KC Computer Club
                 </p>
               </div>
             )}

@@ -353,7 +353,7 @@ export default function ActivitySignupPage() {
                 rows={5}
                 className="w-full rounded-lg border p-3 text-sm transition-all focus:outline-none focus:ring-2"
                 style={{
-                  backgroundColor: 'var(--background)',
+                  backgroundColor: 'var(--card-bg)',
                   borderColor: 'var(--card-border)',
                   color: 'var(--foreground)',
                   '--tw-ring-color': 'var(--primary)',

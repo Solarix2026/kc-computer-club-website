@@ -75,11 +75,12 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId || undefined}
             className={cn(
-              // 基础样式 - 强制深色主题(移除 bg-gray-50)
-              'w-full bg-[#102219]',
-              'border border-[#2a4e3d]',
+              // 基础样式 - 支持亮/暗主题
+              'w-full',
+              'bg-white dark:bg-[#102219]',
+              'border border-gray-300 dark:border-[#2a4e3d]',
               'rounded-lg px-4 py-3 pr-10 text-base',
-              'text-white',
+              'text-gray-900 dark:text-white',
               'appearance-none cursor-pointer',
               // Focus 样式
               'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary',

@@ -17,103 +17,133 @@ const DEFAULT_STUDENT_PASSWORD = '11111111';
 /**
  * GET /api/admin/students
  * 获取所有学生列表（含活动、出勤、项目信息）
+ * 优化：批量查询所有数据，避免 N+1 查询问题
  */
 export async function GET() {
   try {
+    // Step 1: 获取所有学生（单次查询）
     const response = await serverDatabases.listDocuments(
       APPWRITE_DATABASE_ID,
       USERS_COLLECTION_ID,
       [Query.equal('role', 'student'), Query.limit(500)]
     );
 
-    const students = [];
+    // Step 2: 批量获取所有出勤记录（单次查询）
+    let allAttendance: Array<{ studentId?: string; status?: string }> = [];
+    try {
+      const attendanceResponse = await serverDatabases.listDocuments(
+        APPWRITE_DATABASE_ID,
+        ATTENDANCE_COLLECTION_ID,
+        [Query.limit(5000)] // 获取所有出勤记录
+      );
+      allAttendance = attendanceResponse.documents as Array<{ studentId?: string; status?: string }>;
+    } catch {
+      console.warn('获取出勤记录失败，将使用空数据');
+    }
 
-    for (const doc of response.documents) {
-      // 获取出勤统计
-      let attendanceStats = { total: 0, present: 0, late: 0, absent: 0 };
-      try {
-        // 尝试多种可能的 studentId 格式
-        const possibleStudentIds: string[] = [];
-        const extractedId = extractStudentIdFromEmail(doc.email);
-        if (extractedId) possibleStudentIds.push(extractedId);
-        if (doc.studentId && !possibleStudentIds.includes(doc.studentId)) {
-          possibleStudentIds.push(doc.studentId);
-        }
-        if (doc.$id && !possibleStudentIds.includes(doc.$id)) {
-          possibleStudentIds.push(doc.$id);
-        }
+    // Step 3: 批量获取所有项目（单次查询）
+    let allProjects: Array<{
+      $id: string;
+      title: string;
+      teamName: string;
+      status: string;
+      leaderEmail?: string;
+      members?: string | Array<{ email?: string; role?: string }>;
+    }> = [];
+    try {
+      const projectResponse = await serverDatabases.listDocuments(
+        APPWRITE_DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [Query.limit(500)]
+      );
+      allProjects = projectResponse.documents as unknown as Array<{
+        $id: string;
+        title: string;
+        teamName: string;
+        status: string;
+        leaderEmail?: string;
+        members?: string | Array<{ email?: string; role?: string }>;
+      }>;
+    } catch {
+      console.warn('获取项目记录失败，将使用空数据');
+    }
 
-        for (const studentIdToFind of possibleStudentIds) {
-          try {
-            const attendanceResponse = await serverDatabases.listDocuments(
-              APPWRITE_DATABASE_ID,
-              ATTENDANCE_COLLECTION_ID,
-              [Query.equal('studentId', studentIdToFind), Query.limit(200)]
-            );
+    // Step 4: 构建出勤统计映射（按 studentId 分组）
+    const attendanceByStudent = new Map<string, { total: number; present: number; late: number; absent: number }>();
+    for (const record of allAttendance) {
+      const studentId = record.studentId || '';
+      if (!studentId) continue;
+      
+      if (!attendanceByStudent.has(studentId)) {
+        attendanceByStudent.set(studentId, { total: 0, present: 0, late: 0, absent: 0 });
+      }
+      const stats = attendanceByStudent.get(studentId)!;
+      stats.total++;
+      if (record.status === 'present') stats.present++;
+      else if (record.status === 'late') stats.late++;
+      else if (record.status === 'absent') stats.absent++;
+    }
 
-            if (attendanceResponse.documents.length > 0) {
-              const docs = attendanceResponse.documents as Array<{ status?: string }>;
-              attendanceStats.total += docs.length;
-              attendanceStats.present += docs.filter(a => a.status === 'present').length;
-              attendanceStats.late += docs.filter(a => a.status === 'late').length;
-              attendanceStats.absent += docs.filter(a => a.status === 'absent').length;
-            }
-          } catch {
-            // 忽略单个查询错误
-          }
+    // Step 5: 构建项目参与映射（按学生邮箱）
+    const projectsByEmail = new Map<string, Array<{ projectId: string; title: string; teamName: string; role: string; status: string }>>();
+    for (const project of allProjects) {
+      // 处理组长
+      const leaderEmail = (project.leaderEmail || '').toLowerCase().trim();
+      if (leaderEmail) {
+        if (!projectsByEmail.has(leaderEmail)) {
+          projectsByEmail.set(leaderEmail, []);
         }
-      } catch {
-        // 忽略出勤统计错误
+        projectsByEmail.get(leaderEmail)!.push({
+          projectId: project.$id,
+          title: project.title,
+          teamName: project.teamName,
+          role: '组长',
+          status: project.status,
+        });
       }
 
-      // 获取项目信息
-      let projects: Array<{ projectId: string; title: string; teamName: string; role: string; status: string }> = [];
-      try {
-        const projectResponse = await serverDatabases.listDocuments(
-          APPWRITE_DATABASE_ID,
-          PROJECTS_COLLECTION_ID,
-          [Query.limit(100)]
-        );
-        const studentEmail = doc.email.toLowerCase().trim();
-
-        for (const project of projectResponse.documents) {
-          const leaderEmail = (project.leaderEmail || '').toLowerCase().trim();
-
-          if (leaderEmail === studentEmail) {
-            projects.push({
-              projectId: project.$id,
-              title: project.title,
-              teamName: project.teamName,
-              role: '组长',
-              status: project.status,
-            });
-          } else if (project.members) {
-            try {
-              const members = typeof project.members === 'string' ? JSON.parse(project.members) : project.members;
-              const member = members.find((m: { email?: string }) =>
-                m.email && m.email.toLowerCase().trim() === studentEmail
-              );
-              if (member) {
-                projects.push({
-                  projectId: project.$id,
-                  title: project.title,
-                  teamName: project.teamName,
-                  role: member.role || '成员',
-                  status: project.status,
-                });
+      // 处理成员
+      if (project.members) {
+        try {
+          const members = typeof project.members === 'string' ? JSON.parse(project.members) : project.members;
+          for (const member of members) {
+            const memberEmail = (member.email || '').toLowerCase().trim();
+            if (memberEmail && memberEmail !== leaderEmail) {
+              if (!projectsByEmail.has(memberEmail)) {
+                projectsByEmail.set(memberEmail, []);
               }
-            } catch {
-              // 忽略解析错误
+              projectsByEmail.get(memberEmail)!.push({
+                projectId: project.$id,
+                title: project.title,
+                teamName: project.teamName,
+                role: member.role || '成员',
+                status: project.status,
+              });
             }
           }
+        } catch {
+          // 忽略解析错误
         }
-      } catch {
-        // 忽略项目统计错误
       }
+    }
 
-      students.push({
+    // Step 6: 组装学生数据（无需额外查询）
+    const students = response.documents.map((doc) => {
+      const studentId = doc.studentId || extractStudentIdFromEmail(doc.email);
+      const email = (doc.email || '').toLowerCase().trim();
+      
+      // 获取出勤统计（尝试多种 ID 格式）
+      let attendanceStats = attendanceByStudent.get(studentId) 
+        || attendanceByStudent.get(doc.$id) 
+        || attendanceByStudent.get(extractStudentIdFromEmail(doc.email))
+        || { total: 0, present: 0, late: 0, absent: 0 };
+
+      // 获取项目参与
+      const projects = projectsByEmail.get(email) || [];
+
+      return {
         $id: doc.$id,
-        studentId: doc.studentId || extractStudentIdFromEmail(doc.email),
+        studentId,
         chineseName: doc.chineseName || doc.name || '',
         englishName: doc.englishName || '',
         email: doc.email,
@@ -131,8 +161,8 @@ export async function GET() {
         createdAt: doc.createdAt || doc.$createdAt,
         attendanceStats,
         projects,
-      });
-    }
+      };
+    });
 
     return NextResponse.json({ success: true, students });
   } catch (error) {

@@ -72,59 +72,77 @@ export function NoticesSection({ notices, className }: NoticesSectionProps) {
       {/* 公告列表 */}
       <div className="bg-[var(--surface)] rounded-3xl p-1 border border-[var(--border)]">
         <div className="flex flex-col gap-2">
-          {notices.map((notice) => {
-            const date = typeof notice.publishedAt === 'string' 
-              ? new Date(notice.publishedAt) 
-              : notice.publishedAt;
-            const colors = categoryColors[notice.category] || categoryColors.Update;
-            const iconStyle = iconColors[notice.iconColor] || iconColors.green;
-            
-            return (
-              <Link key={notice.id} href={`/notices/${notice.id}`}>
-                <div className="group flex items-center gap-4 p-4 rounded-2xl hover:bg-[var(--surface-hover)] transition-colors cursor-pointer border border-transparent hover:border-[var(--border)]">
-                  {/* 图标 */}
-                  <div className={cn(
-                    'shrink-0 flex items-center justify-center size-12 rounded-xl',
-                    iconStyle.bg,
-                    iconStyle.text
-                  )}>
-                    <span className="material-symbols-outlined">{notice.icon}</span>
-                  </div>
-                  
-                  {/* 内容 */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-bold text-[var(--foreground)] truncate group-hover:text-primary transition-colors">
-                        {notice.title}
-                      </h4>
-                      <span className={cn(
-                        'px-2 py-0.5 rounded text-[10px] font-bold uppercase border',
-                        colors.bg,
-                        colors.text,
-                        colors.border
-                      )}>
-                        {notice.category}
-                      </span>
-                    </div>
-                    <p className="text-sm text-[var(--text-secondary)] truncate">{notice.summary}</p>
-                  </div>
-                  
-                  {/* 时间 */}
-                  <span className="hidden sm:block text-xs text-[var(--text-secondary)] font-mono">
-                    {formatRelativeTime(date)}
-                  </span>
-                  
-                  {/* 箭头 */}
-                  <span className="material-symbols-outlined text-[var(--text-secondary)] group-hover:text-[var(--foreground)] group-hover:translate-x-1 transition-all">
-                    chevron_right
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
+          {notices.map((notice) => (
+            <NoticeCard key={notice.id} notice={notice} />
+          ))}
         </div>
       </div>
     </div>
+  );
+}
+
+// 单个公告卡片组件 - 使用 useEffect 处理客户端时间
+function NoticeCard({ notice }: { notice: Notice }) {
+  const [displayTime, setDisplayTime] = useState<string>('');
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+    const date = typeof notice.publishedAt === 'string' 
+      ? new Date(notice.publishedAt) 
+      : notice.publishedAt;
+    setDisplayTime(formatRelativeTime(date));
+  }, [notice.publishedAt]);
+
+  const date = typeof notice.publishedAt === 'string' 
+    ? new Date(notice.publishedAt) 
+    : notice.publishedAt;
+  const colors = categoryColors[notice.category] || categoryColors.Update;
+  const iconStyle = iconColors[notice.iconColor] || iconColors.green;
+  
+  return (
+    <Link href={`/notices/${notice.id}`}>
+      <div className="group flex items-center gap-4 p-4 rounded-2xl hover:bg-[var(--surface-hover)] transition-colors cursor-pointer border border-transparent hover:border-[var(--border)]">
+        {/* 图标 */}
+        <div className={cn(
+          'shrink-0 flex items-center justify-center size-12 rounded-xl',
+          iconStyle.bg,
+          iconStyle.text
+        )}>
+          <span className="material-symbols-outlined">{notice.icon}</span>
+        </div>
+        
+        {/* 内容 */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-bold text-[var(--foreground)] truncate group-hover:text-primary transition-colors">
+              {notice.title}
+            </h4>
+            <span className={cn(
+              'px-2 py-0.5 rounded text-[10px] font-bold uppercase border',
+              colors.bg,
+              colors.text,
+              colors.border
+            )}>
+              {notice.category}
+            </span>
+          </div>
+          <p className="text-sm text-[var(--text-secondary)] truncate">{notice.summary}</p>
+        </div>
+        
+        {/* 时间 - 仅在客户端渲染 */}
+        {isHydrated && (
+          <span className="hidden sm:block text-xs text-[var(--text-secondary)] font-mono">
+            {displayTime}
+          </span>
+        )}
+        
+        {/* 箭头 */}
+        <span className="material-symbols-outlined text-[var(--text-secondary)] group-hover:text-[var(--foreground)] group-hover:translate-x-1 transition-all">
+          chevron_right
+        </span>
+      </div>
+    </Link>
   );
 }
 

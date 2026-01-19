@@ -212,16 +212,16 @@ export default function AdminActivities() {
                 let statusLabel = '';
 
                 if (activity.status === 'published') {
-                  statusBg = 'bg-green-50 dark:bg-green-900/30';
-                  statusText = 'text-green-700 dark:text-green-400';
+                  statusBg = 'bg-green-900/30';
+                  statusText = 'text-green-400';
                   statusLabel = '已发布';
                 } else if (activity.status === 'draft') {
-                  statusBg = 'bg-amber-50 dark:bg-amber-900/30';
-                  statusText = 'text-amber-700 dark:text-amber-400';
+                  statusBg = 'bg-amber-900/30';
+                  statusText = 'text-amber-400';
                   statusLabel = '草稿';
                 } else {
-                  statusBg = 'bg-red-50 dark:bg-red-900/30';
-                  statusText = 'text-red-700 dark:text-red-400';
+                  statusBg = 'bg-red-900/30';
+                  statusText = 'text-red-400';
                   statusLabel = '已取消';
                 }
 
@@ -274,18 +274,18 @@ export default function AdminActivities() {
                     {/* 操作按钮 */}
                     <div className="ml-4 flex gap-2 shrink-0">
                       <Link href={`/admin/activities/${activity.id}/edit`}>
-                        <button className="p-2 hover:bg-gray-200 rounded-lg text-gray-700 hover:text-[#137fec] transition-colors" title="编辑">
+                        <button className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-[#137fec] transition-colors" title="编辑">
                           <span className="material-symbols-outlined">edit</span>
                         </button>
                       </Link>
                       <Link href={`/admin/activities/${activity.id}/signups`}>
-                        <button className="p-2 hover:bg-gray-200 rounded-lg text-gray-700 hover:text-[#137fec] transition-colors" title="查看报名">
+                        <button className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-[#137fec] transition-colors" title="查看报名">
                           <span className="material-symbols-outlined">group</span>
                         </button>
                       </Link>
                       <button 
                         onClick={() => setDeleteId(activity.$id)}
-                        className="p-2 hover:bg-gray-200 rounded-lg text-gray-700 hover:text-red-600 transition-colors" 
+                        className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-red-500 transition-colors" 
                         title="删除"
                       >
                         <span className="material-symbols-outlined">delete</span>
@@ -325,7 +325,7 @@ export default function AdminActivities() {
                 <button
                   onClick={() => setDeleteId(null)}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
                 >
                   取消
                 </button>
