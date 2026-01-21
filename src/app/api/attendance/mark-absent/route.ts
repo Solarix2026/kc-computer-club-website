@@ -1,10 +1,18 @@
 /* eslint-disable prettier/prettier */
 import { NextRequest, NextResponse } from 'next/server';
-import { serverDatabases, ID, Query } from '@/services/appwrite-server';
+import { serverDatabases, Query } from '@/services/appwrite-server';
 
 const APPWRITE_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
 const ATTENDANCE_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_ATTENDANCE_COLLECTION || 'attendance';
 const USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION || 'users';
+
+/**
+ * 从邮箱提取学号
+ */
+function extractStudentIdFromEmail(email: string): string {
+  const match = email?.match(/^(\d+)@/);
+  return match ? match[1] : email?.split('@')[0] || '';
+}
 
 /**
  * POST /api/attendance/mark-absent
@@ -37,12 +45,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证 sessionTime 格式 (HH:MM)
-    if (!/^\d{2}:\d{2}$/.test(sessionTime)) {
+    if (!/^\d{1,2}:\d{2}$/.test(sessionTime)) {
       return NextResponse.json(
         { error: 'sessionTime 格式必须是 HH:MM（如 15:20 或 21:00）' },
         { status: 400 }
       );
     }
+
+    // 确定 sessionNumber (用于生成 uniqueKey)
+    // 解析 sessionTime 并与配置比较确定是时段1还是时段2
+    const sessionNumber = sessionTime.startsWith('15') || sessionTime.startsWith('14') || parseInt(sessionTime.split(':')[0]) < 16 ? 1 : 2;
 
     const status = markAs === 'absent' ? 'absent' : 'late';
     const statusLabel = status === 'late' ? '迟到' : '缺席';
@@ -54,30 +66,45 @@ export async function POST(request: NextRequest) {
       [Query.equal('role', 'student'), Query.limit(500)]
     );
 
-    const studentList = allUsers.documents.map((doc) => ({
-      $id: doc.$id,
-      studentId: doc.studentId || doc.$id,
-      studentName: doc.chineseName || doc.name || doc.email,
-      studentEmail: doc.email,
-    }));
+    const studentList = allUsers.documents.map((doc) => {
+      const email = String(doc.email || '');
+      const studentId = doc.studentId 
+        ? String(doc.studentId) 
+        : extractStudentIdFromEmail(email);
+      return {
+        $id: doc.$id,
+        studentId,
+        studentName: String(doc.chineseName || doc.name || email),
+        studentEmail: email,
+      };
+    });
 
     console.log(`[MARK-ABSENT] 获取学生列表: ${studentList.length} 名学生`);
 
-    // 获取本时段所有已有的点名记录
+    // 获取本周所有点名记录（按 weekNumber 查询，然后按 sessionNumber 过滤）
     const existingRecords = await serverDatabases.listDocuments(
       APPWRITE_DATABASE_ID,
       ATTENDANCE_COLLECTION_ID,
       [
-        Query.equal('sessionTime', sessionTime),
         Query.equal('weekNumber', weekNumber),
         Query.limit(500),
       ]
     );
 
-    console.log(`[MARK-ABSENT] 周${weekNumber}时段${sessionTime}已有记录: ${existingRecords.documents.length} 条`);
+    // 过滤出该时段的记录（支持多种格式）
+    const sessionRecords = existingRecords.documents.filter((doc) => {
+      const st = String(doc.sessionTime || '');
+      const uk = String(doc.uniqueKey || doc.$id || '');
+      // 匹配 sessionTime 或 uniqueKey 中的 sessionNumber
+      return st === sessionTime || 
+             uk.includes(`_${sessionNumber}_`) || 
+             st === `session${sessionNumber}`;
+    });
+
+    console.log(`[MARK-ABSENT] 周${weekNumber}时段${sessionNumber}已有记录: ${sessionRecords.length} 条`);
 
     // 处理 pending 状态的记录 - 将其更新为 absent
-    const pendingRecords = existingRecords.documents.filter((doc) => doc.status === 'pending');
+    const pendingRecords = sessionRecords.filter((doc) => doc.status === 'pending');
     const updatedRecords = [];
     const now = new Date().toISOString();
 
@@ -104,22 +131,23 @@ export async function POST(request: NextRequest) {
     console.log(`[MARK-ABSENT] 已更新 ${updatedRecords.length} 条 pending 记录为 ${status}`);
 
     // 已有记录的学生ID集合（包括 present, late, absent, pending）
-    const existingStudentIds = new Set(existingRecords.documents.map((doc) => doc.studentId));
+    const existingStudentIds = new Set(sessionRecords.map((doc) => String(doc.studentId)));
 
     // 找出没有任何点名记录的学生（如果时段未初始化，可能有这种情况）
     const missingStudents = studentList.filter((student) => !existingStudentIds.has(student.studentId));
 
     console.log(`[MARK-ABSENT] 无任何记录的学生: ${missingStudents.length} 名`);
 
-    // 为未点名的学生创建缺席记录
+    // 为未点名的学生创建缺席记录（使用 uniqueKey 格式作为文档ID）
     const createdRecords = [];
 
     for (const student of missingStudents) {
+      const uniqueKey = `${student.studentId}_${sessionNumber}_${weekNumber}`;
       try {
         const record = await serverDatabases.createDocument(
           APPWRITE_DATABASE_ID,
           ATTENDANCE_COLLECTION_ID,
-          ID.unique(),
+          uniqueKey,  // 使用 uniqueKey 作为文档ID
           {
             studentId: student.studentId,
             studentName: student.studentName,
@@ -128,8 +156,9 @@ export async function POST(request: NextRequest) {
             sessionTime,
             weekNumber,
             status: status,
-            notes: `系统自动标记（未初始化时段，超时未点名 - ${statusLabel}）`,
+            notes: `系统自动标记（超时未点名 - ${statusLabel}）`,
             createdAt: now,
+            uniqueKey,
           }
         );
         createdRecords.push(record);
@@ -150,11 +179,12 @@ export async function POST(request: NextRequest) {
       message: `自动标记完成：${updatedRecords.length} 名学生从待点名更新为${statusLabel}，${createdRecords.length} 名学生新创建${statusLabel}记录`,
       summary: {
         sessionTime,
+        sessionNumber,
         weekNumber,
         totalStudents: studentList.length,
-        existingRecordsCount: existingRecords.documents.length,
+        existingRecordsCount: sessionRecords.length,
         pendingUpdatedCount: updatedRecords.length,
-        missingCreatedCount: createdRecords.length,
+        createdRecordsCount: createdRecords.length,
         markedAs: status,
       },
     });

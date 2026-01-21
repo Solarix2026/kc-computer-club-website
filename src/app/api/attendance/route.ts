@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         isAttendanceOpen: false,
         session: null,
-        message: `当前不在点名时间。点名时间为每${dayNames[config.dayOfWeek]} ${config.session1Start.hour}:${String(config.session1Start.minute).padStart(2, '0')}-${config.session1Start.hour}:${String(config.session1Start.minute + config.session1Duration).padStart(2, '0')} 或 ${config.session2Start.hour}:${String(config.session2Start.minute).padStart(2, '0')}-${config.session2Start.hour}:${String(config.session2Start.minute + config.session2Duration).padStart(2, '0')}`,
+        message: `当前不在点名时间。点名时间为每${dayNames[config.dayOfWeek]} ${config.session1Start.hour}:${String(config.session1Start.minute).padStart(2, '0')}-${config.session1Start.hour + Math.floor((config.session1Start.minute + config.session1Duration) / 60)}:${String((config.session1Start.minute + config.session1Duration) % 60).padStart(2, '0')} 或 ${config.session2Start.hour}:${String(config.session2Start.minute).padStart(2, '0')}-${config.session2Start.hour + Math.floor((config.session2Start.minute + config.session2Duration) / 60)}:${String((config.session2Start.minute + config.session2Duration) % 60).padStart(2, '0')}`,
         weekNumber,
         debugMode,
         config,
@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
     if (!session && !currentDebugMode) {
       const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
       return NextResponse.json(
-        { error: `当前不在点名时间。点名时间为每${dayNames[currentConfig.dayOfWeek]} ${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute).padStart(2, '0')}-${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute + currentConfig.session1Duration).padStart(2, '0')} 或 ${currentConfig.session2Start.hour}:${String(currentConfig.session2Start.minute).padStart(2, '0')}-${currentConfig.session2Start.hour}:${String(currentConfig.session2Start.minute + currentConfig.session2Duration).padStart(2, '0')}` },
+        { error: `当前不在点名时间。点名时间为每${dayNames[currentConfig.dayOfWeek]} ${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute).padStart(2, '0')}-${currentConfig.session1Start.hour + Math.floor((currentConfig.session1Start.minute + currentConfig.session1Duration) / 60)}:${String((currentConfig.session1Start.minute + currentConfig.session1Duration) % 60).padStart(2, '0')} 或 ${currentConfig.session2Start.hour}:${String(currentConfig.session2Start.minute).padStart(2, '0')}-${currentConfig.session2Start.hour + Math.floor((currentConfig.session2Start.minute + currentConfig.session2Duration) / 60)}:${String((currentConfig.session2Start.minute + currentConfig.session2Duration) % 60).padStart(2, '0')}` },
         { status: 400 }
       );
     }
@@ -414,10 +414,14 @@ export async function POST(request: NextRequest) {
       console.log('[DEBUG POST] 更新 pending 记录为:', checkInStatus);
     } else {
       // 创建新记录（未初始化时段的情况）
+      // 使用 uniqueKey 作为文档ID：studentId_sessionNumber_weekNumber
+      const sessionNumber = session ? session.sessionNumber : 1;
+      const uniqueKey = `${studentId}_${sessionNumber}_${weekNumber}`;
+      
       record = await serverDatabases.createDocument(
         APPWRITE_DATABASE_ID,
         ATTENDANCE_COLLECTION_ID,
-        ID.unique(),
+        uniqueKey,  // 使用 uniqueKey 作为文档ID
         {
           studentId,
           studentName,
@@ -428,6 +432,7 @@ export async function POST(request: NextRequest) {
           status: checkInStatus,
           notes: lateNote || (currentDebugMode ? '[DEBUG] 调试模式点名' : ''),
           createdAt: nowIso,
+          uniqueKey,  // 保存 uniqueKey 字段以便查询
         }
       );
       console.log('[DEBUG POST] 创建新记录:', record.$id);

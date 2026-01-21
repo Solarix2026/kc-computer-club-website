@@ -24,6 +24,7 @@ export interface AttendanceRecord {
 
 export interface AttendanceSession {
   sessionTime: '15:20' | '16:35';
+  sessionNumber: 1 | 2;  // 时段编号：1 或 2
   startTime: Date;
   endTime: Date;
   isActive: boolean;
@@ -100,6 +101,7 @@ export function getCurrentAttendanceSession(): AttendanceSession | null {
     
     return {
       sessionTime: '15:20',
+      sessionNumber: 1,
       startTime,
       endTime,
       isActive: true,
@@ -125,6 +127,7 @@ export function getCurrentAttendanceSession(): AttendanceSession | null {
 
     return {
       sessionTime: '15:20',
+      sessionNumber: 1,
       startTime,
       endTime,
       isActive: true,
@@ -143,6 +146,7 @@ export function getCurrentAttendanceSession(): AttendanceSession | null {
 
     return {
       sessionTime: '16:35',
+      sessionNumber: 2,
       startTime,
       endTime,
       isActive: true,
@@ -172,6 +176,7 @@ export function getCurrentAttendanceSessionWithConfig(config: AttendanceConfig, 
     const sessionTimeStr = `${config.session1Start.hour}:${String(config.session1Start.minute).padStart(2, '0')}`;
     return {
       sessionTime: sessionTimeStr as '15:20' | '16:35',
+      sessionNumber: 1,
       startTime,
       endTime,
       isActive: true,
@@ -198,6 +203,7 @@ export function getCurrentAttendanceSessionWithConfig(config: AttendanceConfig, 
 
     return {
       sessionTime: sessionTimeStr as '15:20' | '16:35',
+      sessionNumber: 1,
       startTime,
       endTime,
       isActive: true,
@@ -217,6 +223,7 @@ export function getCurrentAttendanceSessionWithConfig(config: AttendanceConfig, 
 
     return {
       sessionTime: sessionTimeStr as '15:20' | '16:35',
+      sessionNumber: 2,
       startTime,
       endTime,
       isActive: true,

@@ -1104,7 +1104,7 @@ export default function AdminSettings() {
                   </div>
                 </div>
                 <p className="text-gray-500 text-xs mt-2">
-                  开放时间：{String(attendanceConfig.session1Start.hour).padStart(2, '0')}:{String(attendanceConfig.session1Start.minute).padStart(2, '0')} - {String(attendanceConfig.session1Start.hour).padStart(2, '0')}:{String(attendanceConfig.session1Start.minute + attendanceConfig.session1Duration).padStart(2, '0')}
+                  开放时间：{String(attendanceConfig.session1Start.hour).padStart(2, '0')}:{String(attendanceConfig.session1Start.minute).padStart(2, '0')} - {String(attendanceConfig.session1Start.hour + Math.floor((attendanceConfig.session1Start.minute + attendanceConfig.session1Duration) / 60)).padStart(2, '0')}:{String((attendanceConfig.session1Start.minute + attendanceConfig.session1Duration) % 60).padStart(2, '0')}
                 </p>
               </div>
 
@@ -1159,7 +1159,7 @@ export default function AdminSettings() {
                   </div>
                 </div>
                 <p className="text-gray-500 text-xs mt-2">
-                  开放时间：{String(attendanceConfig.session2Start.hour).padStart(2, '0')}:{String(attendanceConfig.session2Start.minute).padStart(2, '0')} - {String(attendanceConfig.session2Start.hour).padStart(2, '0')}:{String(attendanceConfig.session2Start.minute + attendanceConfig.session2Duration).padStart(2, '0')}
+                  开放时间：{String(attendanceConfig.session2Start.hour).padStart(2, '0')}:{String(attendanceConfig.session2Start.minute).padStart(2, '0')} - {String(attendanceConfig.session2Start.hour + Math.floor((attendanceConfig.session2Start.minute + attendanceConfig.session2Duration) / 60)).padStart(2, '0')}:{String((attendanceConfig.session2Start.minute + attendanceConfig.session2Duration) % 60).padStart(2, '0')}
                 </p>
               </div>
             </div>

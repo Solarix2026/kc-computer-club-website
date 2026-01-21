@@ -10,10 +10,11 @@ interface AttendanceRecord {
   studentName: string;
   studentEmail: string;
   checkInTime: string;
-  sessionTime: '3:15pm' | '4:30pm';
+  sessionTime: string;  // 格式如 '15:20' 或 '18:43'
   weekNumber: number;
   status: 'present' | 'absent' | 'late' | 'pending';
   isPending?: boolean;
+  uniqueKey?: string;
 }
 
 // 学生统计信息
@@ -42,6 +43,7 @@ interface AttendanceSummary {
     present?: number;
     late?: number;
     absent?: number;
+    pending?: number;
     students: AttendanceRecord[];
   };
   session2: {
@@ -49,6 +51,7 @@ interface AttendanceSummary {
     present?: number;
     late?: number;
     absent?: number;
+    pending?: number;
     students: AttendanceRecord[];
   };
 }
@@ -83,6 +86,45 @@ export default function AttendanceRecords() {
   
   // 状态筛选
   const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'late' | 'absent' | 'pending'>('all');
+  
+  // 点名配置（从数据库加载）
+  const [attendanceConfig, setAttendanceConfig] = useState<{
+    session1Start: { hour: number; minute: number };
+    session1Duration: number;
+    session2Start: { hour: number; minute: number };
+    session2Duration: number;
+  }>({
+    session1Start: { hour: 15, minute: 20 },
+    session1Duration: 5,
+    session2Start: { hour: 16, minute: 35 },
+    session2Duration: 5,
+  });
+  
+  // 计算结束时间（处理分钟溢出）
+  const calculateEndTime = (hour: number, minute: number, duration: number): { hour: number; minute: number } => {
+    const totalMinutes = minute + duration;
+    return {
+      hour: hour + Math.floor(totalMinutes / 60),
+      minute: totalMinutes % 60,
+    };
+  };
+
+  // 格式化时间段显示（从配置获取）
+  const formatSessionTimeRange = (sessionNumber: 1 | 2): string => {
+    const start = sessionNumber === 1 ? attendanceConfig.session1Start : attendanceConfig.session2Start;
+    const duration = sessionNumber === 1 ? attendanceConfig.session1Duration : attendanceConfig.session2Duration;
+    const end = calculateEndTime(start.hour, start.minute, duration);
+    const startHour12 = start.hour > 12 ? start.hour - 12 : start.hour;
+    const endHour12 = end.hour > 12 ? end.hour - 12 : end.hour;
+    const period = start.hour >= 12 ? '下午' : '上午';
+    return `${period} ${startHour12}:${String(start.minute).padStart(2, '0')}-${endHour12}:${String(end.minute).padStart(2, '0')}`;
+  };
+  
+  // 获取时段时间字符串（HH:MM 格式）
+  const getSessionTimeString = (sessionNumber: 1 | 2): string => {
+    const start = sessionNumber === 1 ? attendanceConfig.session1Start : attendanceConfig.session2Start;
+    return `${String(start.hour).padStart(2, '0')}:${String(start.minute).padStart(2, '0')}`;
+  };
 
   // 检查点名状态并自动生成验证码
   const checkAttendanceStatus = async () => {
@@ -184,28 +226,72 @@ export default function AttendanceRecords() {
     }
   };
 
-  // 自动初始化时段（如果尚未初始化）
-  const autoInitializeSession = async (sessionTime: '15:20' | '16:35', week: number) => {
+  // 配置类型定义
+  type SessionConfig = {
+    session1Start: { hour: number; minute: number };
+    session1Duration: number;
+    session2Start: { hour: number; minute: number };
+    session2Duration: number;
+  };
+
+  // 检查当前时间是否在时段窗口内（时段开始时间 ~ 结束后15分钟）
+  const isWithinSessionWindow = (sessionNumber: 1 | 2, config?: SessionConfig): boolean => {
+    const now = new Date();
+    const useConfig = config || attendanceConfig;
+    const start = sessionNumber === 1 ? useConfig.session1Start : useConfig.session2Start;
+    const duration = sessionNumber === 1 ? useConfig.session1Duration : useConfig.session2Duration;
+    
+    const sessionStart = new Date();
+    sessionStart.setHours(start.hour, start.minute, 0, 0);
+    
+    const sessionEnd = new Date(sessionStart);
+    sessionEnd.setMinutes(sessionEnd.getMinutes() + duration + 10); // 时段窗口 = 持续时间 + 10分钟缓冲
+    
+    return now >= sessionStart && now <= sessionEnd;
+  };
+
+  // 获取时段时间字符串 (可接收外部配置)
+  const getSessionTimeStringWithConfig = (sessionNumber: 1 | 2, config?: SessionConfig): string => {
+    const useConfig = config || attendanceConfig;
+    const start = sessionNumber === 1 ? useConfig.session1Start : useConfig.session2Start;
+    return `${String(start.hour).padStart(2, '0')}:${String(start.minute).padStart(2, '0')}`;
+  };
+
+  // 自动初始化时段（只在时段开始时自动添加学生）
+  const autoInitializeSession = async (sessionNumber: 1 | 2, week: number, config?: SessionConfig) => {
     try {
+      const useConfig = config || attendanceConfig;
+      const sessionTimeStr = getSessionTimeStringWithConfig(sessionNumber, useConfig);
+      
+      // 只在时段窗口内自动初始化
+      if (!isWithinSessionWindow(sessionNumber, useConfig)) {
+        console.log(`时段 ${sessionTimeStr} 未开始，跳过自动初始化`);
+        return;
+      }
+      
       // 检查该时段是否已初始化
-      const checkResponse = await fetch(`/api/attendance/initialize-session?sessionTime=${sessionTime}&weekNumber=${week}`);
+      const checkResponse = await fetch(`/api/attendance/initialize-session?sessionTime=${sessionTimeStr}&weekNumber=${week}`);
       const checkData = await checkResponse.json();
       
       // 如果未初始化或没有待点名学生，自动初始化
       if (checkData.success && (!checkData.isInitialized || (checkData.stats?.total === 0))) {
-        console.log(`自动初始化时段 ${sessionTime}，第 ${week} 周...`);
+        console.log(`时段 ${sessionTimeStr} 已开始，自动初始化第 ${week} 周...`);
+        const duration = sessionNumber === 1 ? useConfig.session1Duration : useConfig.session2Duration;
         const initResponse = await fetch('/api/attendance/initialize-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            sessionTime,
+            sessionTime: sessionTimeStr,
             weekNumber: week,
-            sessionDuration: 5,
+            sessionDuration: duration,
           }),
         });
         const initData = await initResponse.json();
         if (initData.success) {
           console.log(`✓ 时段初始化完成：${initData.summary?.newRecordsCount || 0} 名学生`);
+          // 刷新记录显示
+          fetchRecords(week);
+          checkSessionInitStatus(sessionTimeStr);
         }
       }
     } catch (err) {
@@ -214,43 +300,74 @@ export default function AttendanceRecords() {
   };
 
   useEffect(() => {
-    // 获取当前周数和验证码状态
+    // 获取当前周数和验证码状态以及配置
     const response = fetch('/api/attendance?action=debug-status');
     response.then((res) => res.json()).then((data) => {
       setWeekNumber(data.config?.weekNumber || 1);
       setAttendanceCode(data.attendanceCode || null);
       setCodeEnabled(data.codeEnabled || false);
-      // 重新获取周数
+      
+      // 加载点名配置（时段时间从数据库获取）
+      const initialConfig: SessionConfig = {
+        session1Start: data.config?.session1Start || { hour: 15, minute: 20 },
+        session1Duration: data.config?.session1Duration || 5,
+        session2Start: data.config?.session2Start || { hour: 16, minute: 35 },
+        session2Duration: data.config?.session2Duration || 5,
+      };
+      setAttendanceConfig(initialConfig);
+      
+      // 重新获取周数和状态
       fetch('/api/attendance').then((res) => res.json()).then(async (statusData) => {
         const currentWeek = statusData.weekNumber || 1;
         setWeekNumber(currentWeek);
         setIsAttendanceOpen(statusData.isAttendanceOpen || false);
         
-        // 自动初始化两个时段
-        await autoInitializeSession('15:20', currentWeek);
-        await autoInitializeSession('16:35', currentWeek);
+        // 构建最新配置 (直接使用，不依赖 state)
+        const latestConfig: SessionConfig = {
+          session1Start: statusData.config?.session1Start || initialConfig.session1Start,
+          session1Duration: statusData.config?.session1Duration || initialConfig.session1Duration,
+          session2Start: statusData.config?.session2Start || initialConfig.session2Start,
+          session2Duration: statusData.config?.session2Duration || initialConfig.session2Duration,
+        };
+        setAttendanceConfig(latestConfig);
+        
+        // 获取时段时间字符串
+        const session1Time = `${String(latestConfig.session1Start.hour).padStart(2, '0')}:${String(latestConfig.session1Start.minute).padStart(2, '0')}`;
+        const session2Time = `${String(latestConfig.session2Start.hour).padStart(2, '0')}:${String(latestConfig.session2Start.minute).padStart(2, '0')}`;
+        
+        // 仅在时段窗口内自动初始化（传入配置，不依赖 state）
+        await autoInitializeSession(1, currentWeek, latestConfig);
+        await autoInitializeSession(2, currentWeek, latestConfig);
         
         // 获取记录和检查状态
         fetchRecords(currentWeek);
-        checkSessionInitStatus('15:20');
+        checkSessionInitStatus(session1Time);
+        checkSessionInitStatus(session2Time);
       });
     });
     
-    // 每 30 秒检查一次点名状态，用于自动生成验证码
-    const statusInterval = setInterval(checkAttendanceStatus, 30000);
+    // 每 30 秒检查一次点名状态和自动初始化
+    const statusInterval = setInterval(async () => {
+      await checkAttendanceStatus();
+      // 检查是否需要自动初始化（时段刚开始时）- 此时 state 已更新
+      if (weekNumber > 0) {
+        await autoInitializeSession(1, weekNumber);
+        await autoInitializeSession(2, weekNumber);
+      }
+    }, 30000);
+    
+    // 每 10 秒刷新一次记录数据（实时更新学生点名状态）
+    const recordsInterval = setInterval(() => {
+      if (weekNumber > 0) {
+        fetchRecords(weekNumber);
+      }
+    }, 10000);
     
     return () => {
       clearInterval(statusInterval);
+      clearInterval(recordsInterval);
     };
   }, []);
-
-  // 当周数改变时，自动初始化新的时段
-  useEffect(() => {
-    if (weekNumber > 0) {
-      autoInitializeSession('15:20', weekNumber);
-      autoInitializeSession('16:35', weekNumber);
-    }
-  }, [weekNumber]);
 
   // 生成新验证码
   const handleGenerateCode = async () => {
@@ -294,8 +411,12 @@ export default function AttendanceRecords() {
   };
 
   // 手动初始化/刷新时段（预填充所有学生为 pending 状态）
-  const handleInitializeSession = async (sessionTime: '15:20' | '16:35') => {
-    if (!confirm(`确定要重新初始化点名时段吗？\n时段: ${sessionTime === '15:20' ? '下午 3:15-3:30' : '下午 4:30-4:45'}\n\n这将为缺失的学生创建待点名记录（已有记录不受影响）。`)) {
+  const handleInitializeSession = async (sessionNumber: 1 | 2) => {
+    const sessionTimeStr = getSessionTimeString(sessionNumber);
+    const sessionRange = formatSessionTimeRange(sessionNumber);
+    const duration = sessionNumber === 1 ? attendanceConfig.session1Duration : attendanceConfig.session2Duration;
+    
+    if (!confirm(`确定要重新初始化点名时段吗？\n时段: ${sessionRange}\n\n这将为缺失的学生创建待点名记录（已有记录不受影响）。`)) {
       return;
     }
     
@@ -305,9 +426,9 @@ export default function AttendanceRecords() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionTime,
+          sessionTime: sessionTimeStr,
           weekNumber,
-          sessionDuration: 5,
+          sessionDuration: duration,
         }),
       });
       const data = await response.json();
@@ -316,7 +437,7 @@ export default function AttendanceRecords() {
         // 刷新数据
         await fetchRecords(weekNumber);
         // 更新初始化状态
-        await checkSessionInitStatus(sessionTime);
+        await checkSessionInitStatus(sessionTimeStr);
       } else {
         alert('初始化失败：' + (data.error || '未知错误'));
       }
@@ -344,9 +465,12 @@ export default function AttendanceRecords() {
     }
   };
 
-  // 标记所有未点名学生为迟到
-  const handleMarkAllLate = async (sessionTime: '15:20' | '16:35') => {
-    if (!confirm(`确定要将所有未点名的学生标记为缺席吗？\n时段: ${sessionTime === '15:20' ? '下午 3:15-3:30' : '下午 4:30-4:45'}`)) {
+  // 标记所有未点名学生为缺席
+  const handleMarkAllLate = async (sessionNumber: 1 | 2) => {
+    const sessionTimeStr = getSessionTimeString(sessionNumber);
+    const sessionRange = formatSessionTimeRange(sessionNumber);
+    
+    if (!confirm(`确定要将所有未点名的学生标记为缺席吗？\n时段: ${sessionRange}`)) {
       return;
     }
     
@@ -356,7 +480,7 @@ export default function AttendanceRecords() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionTime,
+          sessionTime: sessionTimeStr,
           weekNumber,
           markAs: 'absent',  // 标记为缺席
         }),
@@ -395,26 +519,57 @@ export default function AttendanceRecords() {
     return date.toLocaleDateString('zh-CN');
   };
 
-  const handleChangeStatus = async (recordId: string, newStatus: 'present' | 'absent' | 'late') => {
+  const handleChangeStatus = async (
+    recordId: string,
+    newStatus: 'present' | 'absent' | 'late',
+    record?: AttendanceRecord
+  ) => {
     setUpdatingId(recordId);
     
     try {
-      const response = await fetch('/api/attendance/record', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recordId,
-          status: newStatus,
-          notes: newStatus === 'late' ? 'Admin 标记为迟到' : undefined,
-        }),
-      });
+      // 检查是否是 pending 记录（需要创建而非更新）
+      // 新格式: $id = studentId_sessionTime_weekNumber (如: 12345_15:20_3)
+      const isPendingRecord = record?.isPending || record?.status === 'pending';
+      
+      if (isPendingRecord && record) {
+        // 对于 pending 记录，使用 PATCH 创建新的点名记录
+        // recordId 格式: studentId_sessionTime_weekNumber
+        const response = await fetch('/api/attendance/record', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recordId,  // uniqueKey 格式: studentId_sessionTime_weekNumber
+            status: newStatus,
+            studentName: record.studentName,
+            studentEmail: record.studentEmail,
+            notes: newStatus === 'late' ? 'Admin 标记为迟到' : undefined,
+          }),
+        });
 
-      if (response.ok) {
-        // 刷新数据
-        fetchRecords(weekNumber);
+        if (response.ok) {
+          fetchRecords(weekNumber);
+        } else {
+          const data = await response.json();
+          alert('创建失败：' + (data.error || '未知错误'));
+        }
       } else {
-        const data = await response.json();
-        alert('修改失败：' + (data.error || '未知错误'));
+        // 对于已有记录，执行更新操作
+        const response = await fetch('/api/attendance/record', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recordId,
+            status: newStatus,
+            notes: newStatus === 'late' ? 'Admin 标记为迟到' : undefined,
+          }),
+        });
+
+        if (response.ok) {
+          fetchRecords(weekNumber);
+        } else {
+          const data = await response.json();
+          alert('修改失败：' + (data.error || '未知错误'));
+        }
       }
     } catch (err) {
       const error = err as Error & { message?: string };
@@ -624,17 +779,17 @@ export default function AttendanceRecords() {
       <div className={styles.summary}>
         <div className={styles.summaryCard}>
           <div className={styles.title}>下午 3:15-3:30</div>
-          <div className={styles.count}>{summary.session1.total}</div>
+          <div className={styles.count}>{(summary.session1.present || 0) + (summary.session1.late || 0)}</div>
           <div className={styles.label}>人出席</div>
         </div>
         <div className={styles.summaryCard}>
           <div className={styles.title}>下午 4:30-4:45</div>
-          <div className={styles.count}>{summary.session2.total}</div>
+          <div className={styles.count}>{(summary.session2.present || 0) + (summary.session2.late || 0)}</div>
           <div className={styles.label}>人出席</div>
         </div>
         <div className={styles.summaryCard}>
           <div className={styles.title}>本周总人次</div>
-          <div className={styles.count}>{summary.session1.total + summary.session2.total}</div>
+          <div className={styles.count}>{(summary.session1.present || 0) + (summary.session1.late || 0) + (summary.session2.present || 0) + (summary.session2.late || 0)}</div>
           <div className={styles.label}>次出席</div>
         </div>
       </div>
@@ -681,11 +836,11 @@ export default function AttendanceRecords() {
 
       <div className={styles.section}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-          <h3><span className="material-symbols-outlined" style={{fontSize: '20px', marginRight: '8px', verticalAlign: 'middle', color: '#137fec'}}>location_on</span>下午 3:15-3:30 点名记录</h3>
+          <h3><span className="material-symbols-outlined" style={{fontSize: '20px', marginRight: '8px', verticalAlign: 'middle', color: '#137fec'}}>location_on</span>{formatSessionTimeRange(1)} 点名记录</h3>
           <div style={{ display: 'flex', gap: '8px' }}>
             {!sessionInitStatus.isInitialized && (
               <button
-                onClick={() => handleInitializeSession('15:20')}
+                onClick={() => handleInitializeSession(1)}
                 disabled={isInitializing}
                 style={{
                   display: 'flex',
@@ -725,7 +880,7 @@ export default function AttendanceRecords() {
               </div>
             )}
             <button
-              onClick={() => handleMarkAllLate('15:20')}
+              onClick={() => handleMarkAllLate(1)}
               disabled={isMarkingLate}
               style={{
                 display: 'flex',
@@ -810,7 +965,7 @@ export default function AttendanceRecords() {
                     ) : (
                       <div className={styles.statusButtonGroup}>
                         <button
-                          onClick={() => handleChangeStatus(record.$id, 'present')}
+                          onClick={() => handleChangeStatus(record.$id, 'present', record)}
                           className={`${styles.statusBtn} ${styles.statusBtnPresent} ${record.status === 'present' ? styles.active : ''}`}
                           disabled={updatingId === record.$id}
                           title="出席"
@@ -818,7 +973,7 @@ export default function AttendanceRecords() {
                           出席
                         </button>
                         <button
-                          onClick={() => handleChangeStatus(record.$id, 'late')}
+                          onClick={() => handleChangeStatus(record.$id, 'late', record)}
                           className={`${styles.statusBtn} ${styles.statusBtnLate} ${record.status === 'late' ? styles.active : ''}`}
                           disabled={updatingId === record.$id}
                           title="迟到"
@@ -826,7 +981,7 @@ export default function AttendanceRecords() {
                           迟到
                         </button>
                         <button
-                          onClick={() => handleChangeStatus(record.$id, 'absent')}
+                          onClick={() => handleChangeStatus(record.$id, 'absent', record)}
                           className={`${styles.statusBtn} ${styles.statusBtnAbsent} ${record.status === 'absent' ? styles.active : ''}`}
                           disabled={updatingId === record.$id}
                           title="缺席"
@@ -847,10 +1002,10 @@ export default function AttendanceRecords() {
 
       <div className={styles.section}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-          <h3><span className="material-symbols-outlined" style={{fontSize: '20px', marginRight: '8px', verticalAlign: 'middle', color: '#137fec'}}>location_on</span>下午 4:30-4:45 点名记录</h3>
+          <h3><span className="material-symbols-outlined" style={{fontSize: '20px', marginRight: '8px', verticalAlign: 'middle', color: '#137fec'}}>location_on</span>{formatSessionTimeRange(2)} 点名记录</h3>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
-              onClick={() => handleMarkAllLate('16:35')}
+              onClick={() => handleMarkAllLate(2)}
               disabled={isMarkingLate}
               style={{
                 display: 'flex',
@@ -921,19 +1076,21 @@ export default function AttendanceRecords() {
                   <div className={styles.col2}>{record.studentName}</div>
                   <div className={styles.col3}>{record.studentEmail}</div>
                   <div className={styles.col4}>
-                    {record.checkInTime ? `${formatDate(record.checkInTime)} ${formatTime(record.checkInTime)}` : '-'}
+                    {record.status === 'pending' ? (
+                      <span style={{ color: '#6e7681', fontStyle: 'italic' }}>未点名</span>
+                    ) : (
+                      <>{formatDate(record.checkInTime)} {formatTime(record.checkInTime)}</>
+                    )}
                   </div>
                   <div className={styles.col5}>
                     {updatingId === record.$id ? (
                       <span className="material-symbols-outlined" style={{ fontSize: '20px', animation: 'spin 1s linear infinite', color: '#6e7681' }}>
                         sync
                       </span>
-                    ) : record.isPending ? (
-                      <span style={{ color: getStatusColor('pending'), fontWeight: '500' }}>未点名</span>
                     ) : (
                       <div className={styles.statusButtonGroup}>
                         <button
-                          onClick={() => handleChangeStatus(record.$id, 'present')}
+                          onClick={() => handleChangeStatus(record.$id, 'present', record)}
                           className={`${styles.statusBtn} ${styles.statusBtnPresent} ${record.status === 'present' ? styles.active : ''}`}
                           disabled={updatingId === record.$id}
                           title="出席"
@@ -941,7 +1098,7 @@ export default function AttendanceRecords() {
                           出席
                         </button>
                         <button
-                          onClick={() => handleChangeStatus(record.$id, 'late')}
+                          onClick={() => handleChangeStatus(record.$id, 'late', record)}
                           className={`${styles.statusBtn} ${styles.statusBtnLate} ${record.status === 'late' ? styles.active : ''}`}
                           disabled={updatingId === record.$id}
                           title="迟到"
@@ -949,7 +1106,7 @@ export default function AttendanceRecords() {
                           迟到
                         </button>
                         <button
-                          onClick={() => handleChangeStatus(record.$id, 'absent')}
+                          onClick={() => handleChangeStatus(record.$id, 'absent', record)}
                           className={`${styles.statusBtn} ${styles.statusBtnAbsent} ${record.status === 'absent' ? styles.active : ''}`}
                           disabled={updatingId === record.$id}
                           title="缺席"

@@ -785,6 +785,13 @@
           "key": "createdAt",
           "type": "datetime",
           "required": true
+        },
+        {
+          "key": "uniqueKey",
+          "type": "string",
+          "required": false,
+          "size": 256,
+          "description": "唯一标识键 (studentId_sessionTime_weekNumber，sessionTime中:替换为-)"
         }
       ],
       "indexes": [
@@ -804,7 +811,8 @@
           "key": "sessionTime",
           "type": "key"
         }
-      ]
+      ],
+      "note": "Document ID uses uniqueKey format: studentId_sessionTime_weekNumber (e.g., 12345_15-20_3, colon replaced with hyphen)"
     },
     {
       "id": "clubSettings",

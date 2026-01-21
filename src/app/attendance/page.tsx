@@ -92,11 +92,17 @@ export default function AttendancePage() {
     const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
     const dayName = dayNames[attendanceConfig.dayOfWeek];
     
+    // 计算结束时间（处理分钟溢出）
+    const s1EndHour = attendanceConfig.session1Start.hour + Math.floor((attendanceConfig.session1Start.minute + attendanceConfig.session1Duration) / 60);
+    const s1EndMinute = (attendanceConfig.session1Start.minute + attendanceConfig.session1Duration) % 60;
+    const s2EndHour = attendanceConfig.session2Start.hour + Math.floor((attendanceConfig.session2Start.minute + attendanceConfig.session2Duration) / 60);
+    const s2EndMinute = (attendanceConfig.session2Start.minute + attendanceConfig.session2Duration) % 60;
+    
     const s1Start = `${attendanceConfig.session1Start.hour}:${String(attendanceConfig.session1Start.minute).padStart(2, '0')}`;
-    const s1End = `${attendanceConfig.session1Start.hour}:${String(attendanceConfig.session1Start.minute + attendanceConfig.session1Duration).padStart(2, '0')}`;
+    const s1End = `${s1EndHour}:${String(s1EndMinute).padStart(2, '0')}`;
     
     const s2Start = `${attendanceConfig.session2Start.hour}:${String(attendanceConfig.session2Start.minute).padStart(2, '0')}`;
-    const s2End = `${attendanceConfig.session2Start.hour}:${String(attendanceConfig.session2Start.minute + attendanceConfig.session2Duration).padStart(2, '0')}`;
+    const s2End = `${s2EndHour}:${String(s2EndMinute).padStart(2, '0')}`;
     
     return `每${dayName} ${s1Start}-${s1End} 和 ${s2Start}-${s2End}`;
   };

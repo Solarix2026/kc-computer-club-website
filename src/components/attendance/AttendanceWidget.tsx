@@ -284,8 +284,8 @@ export default function AttendanceWidget({
                       <span>
                         {String(status.config.session1Start.hour).padStart(2, '0')}:
                         {String(status.config.session1Start.minute).padStart(2, '0')}-
-                        {String(status.config.session1Start.hour).padStart(2, '0')}:
-                        {String(status.config.session1Start.minute + status.config.session1Duration).padStart(2, '0')}
+                        {String(status.config.session1Start.hour + Math.floor((status.config.session1Start.minute + status.config.session1Duration) / 60)).padStart(2, '0')}:
+                        {String((status.config.session1Start.minute + status.config.session1Duration) % 60).padStart(2, '0')}
                       </span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
@@ -293,8 +293,8 @@ export default function AttendanceWidget({
                       <span>
                         {String(status.config.session2Start.hour).padStart(2, '0')}:
                         {String(status.config.session2Start.minute).padStart(2, '0')}-
-                        {String(status.config.session2Start.hour).padStart(2, '0')}:
-                        {String(status.config.session2Start.minute + status.config.session2Duration).padStart(2, '0')}
+                        {String(status.config.session2Start.hour + Math.floor((status.config.session2Start.minute + status.config.session2Duration) / 60)).padStart(2, '0')}:
+                        {String((status.config.session2Start.minute + status.config.session2Duration) % 60).padStart(2, '0')}
                       </span>
                     </div>
                   </>
