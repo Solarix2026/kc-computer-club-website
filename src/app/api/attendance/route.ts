@@ -418,24 +418,37 @@ export async function POST(request: NextRequest) {
       const sessionNumber = session ? session.sessionNumber : 1;
       const uniqueKey = `${studentId}_${sessionNumber}_${weekNumber}`;
       
-      record = await serverDatabases.createDocument(
-        APPWRITE_DATABASE_ID,
-        ATTENDANCE_COLLECTION_ID,
-        uniqueKey,  // 使用 uniqueKey 作为文档ID
-        {
-          studentId,
-          studentName,
-          studentEmail,
-          checkInTime: nowIso,
-          sessionTime: sessionTime,
-          weekNumber,
-          status: checkInStatus,
-          notes: lateNote || (currentDebugMode ? '[DEBUG] 调试模式点名' : ''),
-          createdAt: nowIso,
-          uniqueKey,  // 保存 uniqueKey 字段以便查询
+      try {
+        record = await serverDatabases.createDocument(
+          APPWRITE_DATABASE_ID,
+          ATTENDANCE_COLLECTION_ID,
+          uniqueKey,  // 使用 uniqueKey 作为文档ID
+          {
+            studentId,
+            studentName,
+            studentEmail,
+            checkInTime: nowIso,
+            sessionTime: sessionTime,
+            weekNumber,
+            status: checkInStatus,
+            notes: lateNote || (currentDebugMode ? '[DEBUG] 调试模式点名' : ''),
+            createdAt: nowIso,
+            uniqueKey,  // 保存 uniqueKey 字段以便查询
+          }
+        );
+        console.log('[DEBUG POST] 创建新记录:', record.$id);
+      } catch (createError: unknown) {
+        const err = createError as Error & { message?: string };
+        // 如果是"已存在"错误，说明已经点过名
+        if (err.message && err.message.includes('already exists')) {
+          return NextResponse.json(
+            { error: '您已完成点名，请勿重复提交' },
+            { status: 400 }
+          );
         }
-      );
-      console.log('[DEBUG POST] 创建新记录:', record.$id);
+        // 其他错误继续抛出
+        throw createError;
+      }
     }
 
     console.log('[DEBUG POST] 记录处理成功:', {

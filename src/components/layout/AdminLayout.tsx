@@ -35,6 +35,7 @@ const navItems: NavItem[] = [
   { label: '学生管理', href: '/admin/students', icon: 'school' },
   { label: '评论管理', href: '/admin/comments', icon: 'chat' },
   { label: '考勤管理', href: '/admin/attendance', icon: 'event_available' },
+  { label: '功课管理', href: '/admin/homework', icon: 'assignment' },
   { label: '项目审核', href: '/admin/projects', icon: 'folder_check' },
   { label: '管理员管理', href: '/admin/manage', icon: 'admin_panel_settings' },
   { label: '社团信息', href: '/admin/settings', icon: 'settings' },

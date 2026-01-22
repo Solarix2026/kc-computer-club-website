@@ -32,6 +32,7 @@ const navItems: NavItem[] = [
   { label: '公告', href: '/notices', icon: 'campaign' },
   { label: '活动', href: '/activities', icon: 'event' },
   { label: '签到', href: '/attendance', icon: 'event_available' },
+  { label: '功课', href: '/homework', icon: 'assignment' },
   { label: '群聊', href: '/chat', icon: 'chat' },
   { label: '项目', href: '/projects', icon: 'folder' },
   { label: '项目提交', href: '/projects/submit', icon: 'lightbulb' },

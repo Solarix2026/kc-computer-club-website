@@ -17,6 +17,10 @@ export const COLLECTIONS = {
     process.env.NEXT_PUBLIC_APPWRITE_CLUB_INFO_COLLECTION || 'club_info',
   PROJECTS:
     process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_COLLECTION || 'projects',
+  HOMEWORK:
+    process.env.NEXT_PUBLIC_APPWRITE_HOMEWORK_COLLECTION || 'homework',
+  HOMEWORK_SUBMISSIONS:
+    process.env.NEXT_PUBLIC_APPWRITE_HOMEWORK_SUBMISSIONS_COLLECTION || 'homework_submissions',
 };
 
 // Appwrite Database
@@ -85,6 +89,7 @@ export const ROUTES = {
   ACTIVITY_DETAIL: '/activities',
   ATTENDANCE: '/attendance',
   PROJECTS: '/projects',
+  HOMEWORK: '/homework',
   ADMIN_LOGIN: '/admin',
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_NOTICES: '/admin/dashboard/notices',
@@ -92,6 +97,7 @@ export const ROUTES = {
   ADMIN_STUDENTS: '/admin/manage',
   ADMIN_ATTENDANCE: '/admin/attendance',
   ADMIN_PROJECTS: '/admin/projects',
+  ADMIN_HOMEWORK: '/admin/homework',
   ADMIN_COMMENTS: '/admin/dashboard/comments',
   ADMIN_SETTINGS: '/admin/dashboard/settings',
 };

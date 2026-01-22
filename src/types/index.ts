@@ -244,3 +244,59 @@ export interface PaginatedResponse<T> {
   limit: number;
   offset: number;
 }
+
+// Homework Types (功课栏)
+export interface Homework {
+  homeworkId: string;
+  title: string;
+  description: string;
+  subject: string;
+  dueDate: string;
+  attachments?: string[]; // 附件URLs (JSON存储)
+  allowedFileTypes?: string[]; // 允许上传的文件类型
+  maxFileSize?: number; // 最大文件大小 (MB)
+  status: 'draft' | 'published' | 'closed';
+  createdBy: string; // 管理员ID
+  createdByName: string; // 管理员姓名
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HomeworkSubmission {
+  submissionId: string;
+  homeworkId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  content?: string; // 文字内容
+  attachments?: string[]; // 提交的附件URLs (JSON存储)
+  status: 'submitted' | 'late' | 'graded' | 'returned';
+  grade?: string; // 评分
+  feedback?: string; // 老师反馈
+  submittedAt: string;
+  gradedAt?: string;
+  gradedBy?: string;
+  updatedAt: string;
+}
+
+export interface CreateHomeworkInput {
+  title: string;
+  description: string;
+  subject: string;
+  dueDate: string;
+  attachments?: string[];
+  allowedFileTypes?: string[];
+  maxFileSize?: number;
+  status?: 'draft' | 'published';
+  createdBy: string;
+  createdByName: string;
+}
+
+export interface CreateSubmissionInput {
+  homeworkId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  content?: string;
+  attachments?: string[];
+}
