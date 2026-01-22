@@ -32,10 +32,21 @@ export default function AdminHomeworkPage() {
   };
   const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'closed'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingHomework, setEditingHomework] = useState<Homework | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 创建表单
   const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    subject: '编程',
+    dueDate: '',
+    status: 'published',
+  });
+
+  // 编辑表单
+  const [editFormData, setEditFormData] = useState({
     title: '',
     description: '',
     subject: '编程',
@@ -147,6 +158,59 @@ export default function AdminHomeworkPage() {
     }
   };
 
+  const openEditModal = (hw: Homework) => {
+    setEditingHomework(hw);
+    // 格式化日期为 datetime-local 输入格式
+    const dueDate = new Date(hw.dueDate);
+    // 创建本地时间戳，考虑时区偏移
+    const offset = dueDate.getTimezoneOffset() * 60000;
+    const localDate = new Date(dueDate.getTime() - offset);
+    const formattedDate = localDate.toISOString().slice(0, 16);
+    setEditFormData({
+      title: hw.title,
+      description: hw.description,
+      subject: hw.subject,
+      dueDate: formattedDate,
+      status: hw.status,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingHomework) return;
+
+    if (!editFormData.title || !editFormData.description || !editFormData.dueDate) {
+      showNotification('请填写所有必填字段', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/homework/${editingHomework.homeworkId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editFormData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showNotification('功课更新成功', 'success');
+        setShowEditModal(false);
+        setEditingHomework(null);
+        fetchHomework();
+      } else {
+        showNotification(data.error || '更新失败', 'error');
+      }
+    } catch (err) {
+      console.error('更新失败:', err);
+      showNotification('更新失败', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('zh-CN', {
@@ -177,7 +241,7 @@ export default function AdminHomeworkPage() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-[#137fec] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-400">加载中...</p>
+            <p className="text-gray-500 dark:text-gray-400">加载中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -190,11 +254,11 @@ export default function AdminHomeworkPage() {
         {/* 页面标题 */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
               <span className="material-symbols-outlined text-[#137fec] text-3xl">assignment</span>
               功课管理
             </h1>
-            <p className="text-gray-400 mt-1">发布和管理功课</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">发布和管理功课</p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
@@ -219,7 +283,7 @@ export default function AdminHomeworkPage() {
               className={`px-4 py-2 rounded-lg transition-all ${
                 filterStatus === filter.key
                   ? 'bg-[#137fec] text-white'
-                  : 'bg-[#1a2632] text-gray-300 hover:bg-[#243442]'
+                  : 'bg-gray-100 dark:bg-[#1a2632] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#243442]'
               }`}
             >
               {filter.label}
@@ -229,29 +293,29 @@ export default function AdminHomeworkPage() {
 
         {/* 功课列表 */}
         {homework.length === 0 ? (
-          <div className="bg-[#1a2632] border border-[#283946] rounded-2xl p-12 text-center">
-            <span className="material-symbols-outlined text-6xl text-gray-600 mb-4">inbox</span>
-            <h3 className="text-xl font-semibold text-white mb-2">暂无功课</h3>
-            <p className="text-gray-400">点击上方按钮发布第一个功课</p>
+          <div className="bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-2xl p-12 text-center shadow-sm dark:shadow-none">
+            <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600 mb-4">inbox</span>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">暂无功课</h3>
+            <p className="text-gray-500 dark:text-gray-400">点击上方按钮发布第一个功课</p>
           </div>
         ) : (
-          <div className="bg-[#1a2632] border border-[#283946] rounded-2xl overflow-hidden">
+          <div className="bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
             <table className="w-full">
-              <thead className="bg-[#0d1117]">
+              <thead className="bg-gray-50 dark:bg-[#0d1117]">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">功课标题</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">科目</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">截止日期</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">状态</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">操作</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">功课标题</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">科目</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">截止日期</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">状态</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-500 dark:text-gray-400">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#283946]">
+              <tbody className="divide-y divide-gray-200 dark:divide-[#283946]">
                 {homework.map((hw) => (
-                  <tr key={hw.homeworkId} className="hover:bg-[#243442] transition-colors">
+                  <tr key={hw.homeworkId} className="hover:bg-gray-50 dark:hover:bg-[#243442] transition-colors">
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-white font-medium">{hw.title}</div>
+                        <div className="text-gray-900 dark:text-white font-medium">{hw.title}</div>
                         <div className="text-gray-500 text-sm truncate max-w-xs">{hw.description}</div>
                       </div>
                     </td>
@@ -260,7 +324,7 @@ export default function AdminHomeworkPage() {
                         {hw.subject}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-400 text-sm">
+                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">
                       {formatDate(hw.dueDate)}
                     </td>
                     <td className="px-6 py-4">
@@ -268,9 +332,16 @@ export default function AdminHomeworkPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEditModal(hw)}
+                          className="p-2 text-gray-400 hover:text-[#137fec] hover:bg-gray-100 dark:hover:bg-[#283946] rounded-lg transition-colors"
+                          title="编辑"
+                        >
+                          <span className="material-symbols-outlined">edit</span>
+                        </button>
                         <Link
                           href={`/admin/homework/${hw.homeworkId}`}
-                          className="p-2 text-gray-400 hover:text-white hover:bg-[#283946] rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#283946] rounded-lg transition-colors"
                           title="查看提交"
                         >
                           <span className="material-symbols-outlined">visibility</span>
@@ -278,7 +349,7 @@ export default function AdminHomeworkPage() {
                         {hw.status === 'published' && (
                           <button
                             onClick={() => handleStatusChange(hw.homeworkId, 'closed')}
-                            className="p-2 text-gray-400 hover:text-orange-400 hover:bg-[#283946] rounded-lg transition-colors"
+                            className="p-2 text-gray-400 hover:text-orange-400 hover:bg-gray-100 dark:hover:bg-[#283946] rounded-lg transition-colors"
                             title="关闭"
                           >
                             <span className="material-symbols-outlined">lock</span>
@@ -287,7 +358,7 @@ export default function AdminHomeworkPage() {
                         {hw.status === 'closed' && (
                           <button
                             onClick={() => handleStatusChange(hw.homeworkId, 'published')}
-                            className="p-2 text-gray-400 hover:text-green-400 hover:bg-[#283946] rounded-lg transition-colors"
+                            className="p-2 text-gray-400 hover:text-green-400 hover:bg-gray-100 dark:hover:bg-[#283946] rounded-lg transition-colors"
                             title="重新开放"
                           >
                             <span className="material-symbols-outlined">lock_open</span>
@@ -295,7 +366,7 @@ export default function AdminHomeworkPage() {
                         )}
                         <button
                           onClick={() => handleDelete(hw.homeworkId)}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-[#283946] rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-100 dark:hover:bg-[#283946] rounded-lg transition-colors"
                           title="删除"
                         >
                           <span className="material-symbols-outlined">delete</span>
@@ -312,12 +383,12 @@ export default function AdminHomeworkPage() {
         {/* 创建功课弹窗 */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#1a2632] border border-[#283946] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-[#283946] flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-white">发布功课</h2>
+            <div className="bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl dark:shadow-none">
+              <div className="p-6 border-b border-gray-200 dark:border-[#283946] flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">发布功课</h2>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-[#283946] rounded-lg transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#283946] rounded-lg transition-colors"
                 >
                   <span className="material-symbols-outlined">close</span>
                 </button>
@@ -326,23 +397,23 @@ export default function AdminHomeworkPage() {
               <div className="p-6 space-y-4">
                 {/* 标题 */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">功课标题 *</label>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">功课标题 *</label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="例如：第一周编程作业"
-                    className="w-full bg-[#0d1117] border border-[#283946] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
+                    className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
                   />
                 </div>
 
                 {/* 科目 */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">科目 *</label>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">科目 *</label>
                   <select
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="w-full bg-[#0d1117] border border-[#283946] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#137fec]"
+                    className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-[#137fec]"
                   >
                     <option value="编程">编程</option>
                     <option value="AI">AI</option>
@@ -354,30 +425,30 @@ export default function AdminHomeworkPage() {
 
                 {/* 截止日期 */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">截止日期 *</label>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">截止日期 *</label>
                   <input
                     type="datetime-local"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    className="w-full bg-[#0d1117] border border-[#283946] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#137fec]"
+                    className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-[#137fec]"
                   />
                 </div>
 
                 {/* 描述 */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">功课要求 *</label>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">功课要求 *</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="详细描述功课要求..."
                     rows={6}
-                    className="w-full bg-[#0d1117] border border-[#283946] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
+                    className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
                   />
                 </div>
 
                 {/* 状态 */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">发布状态</label>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">发布状态</label>
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -388,7 +459,7 @@ export default function AdminHomeworkPage() {
                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                         className="w-4 h-4 text-[#137fec]"
                       />
-                      <span className="text-white">立即发布</span>
+                      <span className="text-gray-900 dark:text-white">立即发布</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -399,16 +470,16 @@ export default function AdminHomeworkPage() {
                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                         className="w-4 h-4 text-[#137fec]"
                       />
-                      <span className="text-white">保存草稿</span>
+                      <span className="text-gray-900 dark:text-white">保存草稿</span>
                     </label>
                   </div>
                 </div>
               </div>
 
-              <div className="p-6 border-t border-[#283946] flex justify-end gap-3">
+              <div className="p-6 border-t border-gray-200 dark:border-[#283946] flex justify-end gap-3">
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
+                  className="px-6 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   取消
                 </button>
@@ -433,6 +504,148 @@ export default function AdminHomeworkPage() {
             </div>
           </div>
         )}
+
+        {/* 编辑功课弹窗 */}
+        {showEditModal && editingHomework && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl dark:shadow-none">
+              <div className="p-6 border-b border-gray-200 dark:border-[#283946] flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">编辑功课</h2>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingHomework(null);
+                  }}
+                  className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#283946] rounded-lg transition-colors"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* 标题 */}
+                <div>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">功课标题 *</label>
+                  <input
+                    type="text"
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    placeholder="例如：第一周编程作业"
+                    className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
+                  />
+                </div>
+
+                {/* 科目 */}
+                <div>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">科目 *</label>
+                  <select
+                    value={editFormData.subject}
+                    onChange={(e) => setEditFormData({ ...editFormData, subject: e.target.value })}
+                    className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-[#137fec]"
+                  >
+                    <option value="编程">编程</option>
+                    <option value="AI">AI</option>
+                    <option value="网页">网页开发</option>
+                    <option value="算法">算法</option>
+                    <option value="其他">其他</option>
+                  </select>
+                </div>
+
+                {/* 截止日期 */}
+                <div>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">截止日期 *</label>
+                  <input
+                    type="datetime-local"
+                    value={editFormData.dueDate}
+                    onChange={(e) => setEditFormData({ ...editFormData, dueDate: e.target.value })}
+                    className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-[#137fec]"
+                  />
+                </div>
+
+                {/* 描述 */}
+                <div>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">功课要求 *</label>
+                  <textarea
+                    value={editFormData.description}
+                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                    placeholder="详细描述功课要求..."
+                    rows={6}
+                    className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
+                  />
+                </div>
+
+                {/* 状态 */}
+                <div>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">发布状态</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="editStatus"
+                        value="published"
+                        checked={editFormData.status === 'published'}
+                        onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                        className="w-4 h-4 text-[#137fec]"
+                      />
+                      <span className="text-gray-900 dark:text-white">已发布</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="editStatus"
+                        value="draft"
+                        checked={editFormData.status === 'draft'}
+                        onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                        className="w-4 h-4 text-[#137fec]"
+                      />
+                      <span className="text-gray-900 dark:text-white">草稿</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="editStatus"
+                        value="closed"
+                        checked={editFormData.status === 'closed'}
+                        onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                        className="w-4 h-4 text-[#137fec]"
+                      />
+                      <span className="text-gray-900 dark:text-white">已关闭</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-gray-200 dark:border-[#283946] flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingHomework(null);
+                  }}
+                  className="px-6 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 px-6 py-2 bg-[#137fec] text-white rounded-lg hover:bg-[#0f5fcc] transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined">save</span>
+                      保存更改
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Toast 通知 */}
@@ -448,10 +661,10 @@ export default function AdminHomeworkPage() {
             }`}>
               {toastType === 'success' ? 'check_circle' : 'error'}
             </span>
-            <p className="text-sm text-white">{toastMessage}</p>
+            <p className="text-sm text-gray-900 dark:text-white">{toastMessage}</p>
             <button
               onClick={() => setShowToast(false)}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               <span className="material-symbols-outlined text-base">close</span>
             </button>

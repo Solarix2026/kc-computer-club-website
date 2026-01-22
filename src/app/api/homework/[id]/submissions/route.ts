@@ -87,12 +87,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (homework.status !== 'published') {
       return NextResponse.json(
-        { success: false, error: '此功课暂不接受提交' },
+        { success: false, error: '此功课已截止，无法提交' },
         { status: 400 }
       );
     }
 
-    // 检查是否已经提交过
+    // 检查是否已过期
+    const now = new Date();
+    const dueDate = new Date(homework.dueDate);
+    const isLate = now > dueDate;
+
+    // 已过期且功课状态为 closed，不允许提交
+    if (isLate && homework.status === 'closed') {
+      return NextResponse.json(
+        { success: false, error: '此功课已截止，无法提交' },
+        { status: 400 }
+      );
+    }
     const existingSubmissions = await serverDatabases.listDocuments(
       APPWRITE_DATABASE_ID,
       SUBMISSIONS_COLLECTION_ID,
@@ -109,11 +120,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { status: 400 }
       );
     }
-
-    // 检查是否过期
-    const now = new Date();
-    const dueDate = new Date(homework.dueDate);
-    const isLate = now > dueDate;
 
     const submissionData = {
       homeworkId,

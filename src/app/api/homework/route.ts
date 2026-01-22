@@ -23,7 +23,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    const queries = status ? [Query.equal('status', status)] : [];
+    const queries: any[] = [];
+    
+    // 处理多个状态 (用逗号分隔)
+    if (status) {
+      const statuses = status.split(',').map(s => s.trim());
+      if (statuses.length === 1) {
+        queries.push(Query.equal('status', statuses[0]));
+      } else {
+        // 使用 OR 查询多个状态
+        queries.push(Query.or(statuses.map(s => Query.equal('status', s))));
+      }
+    }
+    
     queries.push(Query.orderDesc('createdAt'));
 
     const response = await serverDatabases.listDocuments(
@@ -32,7 +44,30 @@ export async function GET(request: NextRequest) {
       queries
     );
 
-    const homework = response.documents.map(parseHomework);
+    // 自动关闭已过期的功课
+    const now = new Date();
+    const homework = await Promise.all(
+      response.documents.map(async (doc) => {
+        const parsed = parseHomework(doc);
+        
+        // 如果功课已发布且已过期，自动设为已截止
+        if (parsed.status === 'published' && new Date(parsed.dueDate) < now) {
+          try {
+            await serverDatabases.updateDocument(
+              APPWRITE_DATABASE_ID,
+              HOMEWORK_COLLECTION_ID,
+              parsed.homeworkId,
+              { status: 'closed', updatedAt: now.toISOString() }
+            );
+            parsed.status = 'closed';
+          } catch (updateErr) {
+            console.error('自动关闭功课失败:', updateErr);
+          }
+        }
+        
+        return parsed;
+      })
+    );
 
     return NextResponse.json({
       success: true,

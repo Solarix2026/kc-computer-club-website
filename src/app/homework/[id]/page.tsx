@@ -221,7 +221,7 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-[#13ec80] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-400">加载中...</p>
+            <p className="text-gray-500 dark:text-gray-400">加载中...</p>
           </div>
         </div>
       </StudentLayout>
@@ -232,10 +232,10 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
     return (
       <StudentLayout>
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-            <span className="material-symbols-outlined text-4xl text-red-400 mb-3">error</span>
-            <h3 className="text-xl font-semibold text-white mb-2">加载失败</h3>
-            <p className="text-gray-400 mb-4">{error || '功课不存在'}</p>
+          <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-6 text-center">
+            <span className="material-symbols-outlined text-4xl text-red-500 dark:text-red-400 mb-3">error</span>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">加载失败</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">{error || '功课不存在'}</p>
             <Link href="/homework" className="text-[#13ec80] hover:underline">
               返回功课列表
             </Link>
@@ -246,8 +246,10 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const isOverdue = new Date() > new Date(homework.dueDate);
-  const canSubmit = !mySubmission && !isOverdue && user;
-  const canUpdate = mySubmission && mySubmission.status !== 'graded' && user;
+  const canSubmit = !mySubmission && !isOverdue && user && homework.status === 'published';
+  // 允许更新：未评分 且 (未过期 或 被退回)
+  const canUpdate = mySubmission && mySubmission.status !== 'graded' && user && 
+    (!isOverdue || mySubmission.status === 'returned');
 
   return (
     <StudentLayout>
@@ -255,24 +257,24 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
         {/* 返回链接 */}
         <Link
           href="/homework"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 transition-colors"
         >
           <span className="material-symbols-outlined">arrow_back</span>
           返回功课列表
         </Link>
 
         {/* 功课详情 */}
-        <div className="bg-[#1a2632] border border-[#283946] rounded-2xl overflow-hidden">
+        <div className="bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
           {/* 头部 */}
-          <div className="p-6 border-b border-[#283946]">
+          <div className="p-6 border-b border-gray-200 dark:border-[#283946]">
             <div className="flex items-center gap-3 mb-3">
               <span className="px-3 py-1 rounded-full bg-[#137fec]/10 text-[#137fec]">
                 {homework.subject}
               </span>
               {getStatusBadge()}
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">{homework.title}</h1>
-            <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{homework.title}</h1>
+            <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">person</span>
                 {homework.createdByName}
@@ -290,15 +292,15 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
 
           {/* 内容 */}
           <div className="p-6">
-            <h2 className="text-lg font-semibold text-white mb-3">功课要求</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">功课要求</h2>
             <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300 whitespace-pre-wrap">{homework.description}</p>
+              <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{homework.description}</p>
             </div>
 
             {/* 附件 */}
             {homework.attachments && homework.attachments.length > 0 && (
               <div className="mt-6">
-                <h3 className="text-md font-semibold text-white mb-2">附件</h3>
+                <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-2">附件</h3>
                 <div className="flex flex-wrap gap-2">
                   {homework.attachments.map((url, index) => (
                     <a
@@ -306,7 +308,7 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-3 py-2 bg-[#243442] rounded-lg text-gray-300 hover:bg-[#2d4050] transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-[#243442] rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#2d4050] transition-colors"
                     >
                       <span className="material-symbols-outlined text-sm">attach_file</span>
                       附件 {index + 1}
@@ -321,28 +323,28 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
         {/* 提交统计 */}
         {stats && (
           <div className="mt-6 grid grid-cols-4 gap-4">
-            <div className="bg-[#1a2632] border border-[#283946] rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-white">{stats.total}</div>
-              <div className="text-sm text-gray-400">总提交</div>
+            <div className="bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-xl p-4 text-center shadow-sm dark:shadow-none">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">总提交</div>
             </div>
-            <div className="bg-[#1a2632] border border-[#283946] rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-blue-400">{stats.submitted}</div>
-              <div className="text-sm text-gray-400">已提交</div>
+            <div className="bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-xl p-4 text-center shadow-sm dark:shadow-none">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.submitted}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">已提交</div>
             </div>
-            <div className="bg-[#1a2632] border border-[#283946] rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-orange-400">{stats.late}</div>
-              <div className="text-sm text-gray-400">迟交</div>
+            <div className="bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-xl p-4 text-center shadow-sm dark:shadow-none">
+              <div className="text-2xl font-bold text-orange-500 dark:text-orange-400">{stats.late}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">迟交</div>
             </div>
-            <div className="bg-[#1a2632] border border-[#283946] rounded-xl p-4 text-center">
+            <div className="bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-xl p-4 text-center shadow-sm dark:shadow-none">
               <div className="text-2xl font-bold text-[#13ec80]">{stats.graded}</div>
-              <div className="text-sm text-gray-400">已评分</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">已评分</div>
             </div>
           </div>
         )}
 
         {/* 我的提交 / 提交表单 */}
-        <div className="mt-6 bg-[#1a2632] border border-[#283946] rounded-2xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <div className="mt-6 bg-white dark:bg-[#1a2632] border border-gray-200 dark:border-[#283946] rounded-2xl p-6 shadow-sm dark:shadow-none">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-[#13ec80]">edit_document</span>
             {mySubmission ? '我的提交' : '提交功课'}
           </h2>
@@ -351,26 +353,45 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
           {mySubmission && mySubmission.status === 'graded' && (
             <div className="mb-6 p-4 bg-[#13ec80]/5 border border-[#13ec80]/20 rounded-xl">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-gray-400">评分</span>
+                <span className="text-gray-500 dark:text-gray-400">评分</span>
                 <span className="text-2xl font-bold text-[#13ec80]">{mySubmission.grade}</span>
               </div>
               {mySubmission.feedback && (
                 <div>
-                  <span className="text-gray-400 text-sm">老师反馈</span>
-                  <p className="text-white mt-1">{mySubmission.feedback}</p>
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">老师反馈</span>
+                  <p className="text-gray-900 dark:text-white mt-1">{mySubmission.feedback}</p>
                 </div>
               )}
               {mySubmission.gradedAt && (
-                <div className="text-xs text-gray-500 mt-2">
+                <div className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                   评分时间: {formatDate(mySubmission.gradedAt)}
                 </div>
               )}
             </div>
           )}
 
+          {/* 退回提示 */}
+          {mySubmission && mySubmission.status === 'returned' && (
+            <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-purple-500">undo</span>
+                <span className="font-medium text-purple-700 dark:text-purple-400">功课已退回</span>
+              </div>
+              {mySubmission.feedback && (
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">老师留言</span>
+                  <p className="text-gray-900 dark:text-white mt-1">{mySubmission.feedback}</p>
+                </div>
+              )}
+              <p className="text-purple-600 dark:text-purple-300 text-sm mt-2">
+                请根据老师的反馈修改后重新提交
+              </p>
+            </div>
+          )}
+
           {/* 提交时间 */}
           {mySubmission && (
-            <div className="mb-4 text-sm text-gray-400">
+            <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
               提交时间: {formatDate(mySubmission.submittedAt)}
             </div>
           )}
@@ -383,7 +404,7 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="在此输入功课内容..."
                 disabled={mySubmission?.status === 'graded'}
-                className="w-full h-48 bg-[#0d1117] border border-[#283946] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-[#13ec80] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-48 bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-xl px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#13ec80] disabled:opacity-50 disabled:cursor-not-allowed"
               />
 
               {/* 提交按钮 */}
@@ -435,8 +456,8 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
             </>
           ) : (
             <div className="text-center py-8">
-              <span className="material-symbols-outlined text-4xl text-gray-600 mb-3">login</span>
-              <p className="text-gray-400 mb-4">请登录后提交功课</p>
+              <span className="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-600 mb-3">login</span>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">请登录后提交功课</p>
               <Link
                 href="/auth/login"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#13ec80] text-[#0d1117] rounded-lg font-medium hover:bg-[#0fd673] transition-colors"
@@ -462,10 +483,10 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
             }`}>
               {toastType === 'success' ? 'check_circle' : 'error'}
             </span>
-            <p className="text-sm text-white">{toastMessage}</p>
+            <p className="text-sm text-gray-900 dark:text-white">{toastMessage}</p>
             <button
               onClick={() => setShowToast(false)}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               <span className="material-symbols-outlined text-base">close</span>
             </button>
