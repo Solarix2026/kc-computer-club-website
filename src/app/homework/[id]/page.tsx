@@ -247,8 +247,8 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
 
   const isOverdue = new Date() > new Date(homework.dueDate);
   const canSubmit = !mySubmission && !isOverdue && user && homework.status === 'published';
-  // 允许更新：未评分 且 (未过期 或 被退回)
-  const canUpdate = mySubmission && mySubmission.status !== 'graded' && user && 
+  // 允许更新：未评分 且 (未过期 或 被退回) 且 功课未关闭
+  const canUpdate = mySubmission && mySubmission.status !== 'graded' && user && homework.status !== 'closed' &&
     (!isOverdue || mySubmission.status === 'returned');
 
   return (
@@ -403,7 +403,7 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="在此输入功课内容..."
-                disabled={mySubmission?.status === 'graded'}
+                disabled={mySubmission?.status === 'graded' || homework.status === 'closed'}
                 className="w-full h-48 bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-xl px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#13ec80] disabled:opacity-50 disabled:cursor-not-allowed"
               />
 
@@ -449,8 +449,8 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
                   </button>
                 )}
 
-                {!canSubmit && !canUpdate && mySubmission?.status !== 'graded' && isOverdue && (
-                  <p className="text-red-400">功课已过期，无法提交</p>
+                {!canSubmit && !canUpdate && mySubmission?.status !== 'graded' && (homework.status === 'closed' || isOverdue) && (
+                  <p className="text-gray-400">功课已截止，无法提交</p>
                 )}
               </div>
             </>
