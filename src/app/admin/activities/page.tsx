@@ -125,11 +125,11 @@ export default function AdminActivities() {
 
   return (
     <AdminLayout adminName="管理员">
-      <div style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)', minHeight: '100vh' }} className="p-6">
+      <div style={{ backgroundColor: '#101922', color: 'white', minHeight: '100vh' }} className="p-6">
         {/* 页面头部 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-black mb-2" style={{ color: 'var(--foreground)' }}>活动管理</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>管理社团的所有活动，支持创建、编辑和取消活动。</p>
+          <h1 className="text-3xl font-black mb-2 text-white">活动管理</h1>
+          <p className="text-[#8ba3a6]">管理社团的所有活动，支持创建、编辑和取消活动。</p>
         </div>
 
         {/* 操作栏 */}
@@ -146,7 +146,7 @@ export default function AdminActivities() {
             <Button 
               variant="primary" 
               leftIcon="add"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+              style={{ backgroundColor: '#137fec', color: 'white' }}
             >
               创建活动
             </Button>
@@ -161,10 +161,9 @@ export default function AdminActivities() {
               onClick={() => setSelectedStatus(status)}
               className={`px-4 py-2 rounded-lg font-medium transition-all`}
               style={{
-                backgroundColor: selectedStatus === status ? 'var(--primary)' : 'var(--card-bg)',
-                color: selectedStatus === status ? 'var(--primary-foreground)' : 'var(--foreground)',
-                borderColor: selectedStatus === status ? 'var(--primary)' : 'var(--card-border)',
-                border: `1px solid ${selectedStatus === status ? 'var(--primary)' : 'var(--card-border)'}`,
+                backgroundColor: selectedStatus === status ? '#137fec' : '#1a2632',
+                color: selectedStatus === status ? 'white' : '#8ba3a6',
+                border: `1px solid ${selectedStatus === status ? '#137fec' : '#2a3c4a'}`,
               }}
             >
               {status === '全部' ? '全部' : statusLabels[status]}
@@ -174,38 +173,38 @@ export default function AdminActivities() {
 
         {/* 统计信息 */}
         <div className="mb-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
-            <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>活动总数</p>
-            <p className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>{activities.length}</p>
+          <div className="rounded-xl p-4 border border-[#2a3c4a]" style={{ backgroundColor: '#1a2632' }}>
+            <p className="text-sm mb-1 text-[#8ba3a6]">活动总数</p>
+            <p className="text-2xl font-bold text-[#137fec]">{activities.length}</p>
           </div>
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
-            <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>已发布</p>
-            <p className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>
+          <div className="rounded-xl p-4 border border-[#2a3c4a]" style={{ backgroundColor: '#1a2632' }}>
+            <p className="text-sm mb-1 text-[#8ba3a6]">已发布</p>
+            <p className="text-2xl font-bold text-[#137fec]">
               {activities.filter((a) => a.status === 'published').length}
             </p>
           </div>
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
-            <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>草稿中</p>
-            <p className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>
+          <div className="rounded-xl p-4 border border-[#2a3c4a]" style={{ backgroundColor: '#1a2632' }}>
+            <p className="text-sm mb-1 text-[#8ba3a6]">草稿中</p>
+            <p className="text-2xl font-bold text-[#137fec]">
               {activities.filter((a) => a.status === 'draft').length}
             </p>
           </div>
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
-            <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>参与人数</p>
-            <p className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>
+          <div className="rounded-xl p-4 border border-[#2a3c4a]" style={{ backgroundColor: '#1a2632' }}>
+            <p className="text-sm mb-1 text-[#8ba3a6]">参与人数</p>
+            <p className="text-2xl font-bold text-[#137fec]">
               {activities.reduce((sum, a) => sum + (a.currentParticipants || 0), 0)}
             </p>
           </div>
         </div>
 
         {/* 活动列表 */}
-        <div className="rounded-2xl overflow-hidden border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+        <div className="rounded-2xl overflow-hidden border border-[#2a3c4a]" style={{ backgroundColor: '#1a2632' }}>
           {isLoading ? (
             <div className="px-6 py-12 flex justify-center">
               <Loading size="sm" text="加载活动中..." />
             </div>
           ) : filteredActivities.length > 0 ? (
-            <div className="divide-y" style={{ borderColor: 'var(--card-border)' }}>
+            <div className="divide-y divide-[#2a3c4a]">
               {filteredActivities.map((activity) => {
                 let statusBg = '';
                 let statusText = '';
@@ -229,13 +228,13 @@ export default function AdminActivities() {
                   <div
                     key={activity.id}
                     className="px-6 py-4 transition-colors flex items-center justify-between"
-                    style={{ backgroundColor: 'var(--card-bg)', color: 'var(--foreground)' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--card-hover-bg)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--card-bg)'}
+                    style={{ backgroundColor: '#1a2632', color: 'white' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#243342'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1a2632'}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold truncate flex-1" style={{ color: 'var(--foreground)' }}>
+                        <h3 className="font-semibold truncate flex-1 text-white">
                           {activity.title}
                         </h3>
                         <span
@@ -244,7 +243,7 @@ export default function AdminActivities() {
                           {statusLabel}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-sm flex-wrap" style={{ color: 'var(--text-secondary)' }}>
+                      <div className="flex items-center gap-4 text-sm flex-wrap text-[#8ba3a6]">
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">
                             calendar_today
@@ -297,14 +296,14 @@ export default function AdminActivities() {
             </div>
           ) : (
             <div className="px-6 py-12 text-center">
-              <span className="material-symbols-outlined text-6xl text-gray-400 block mb-3">
+              <span className="material-symbols-outlined text-6xl text-[#2a3c4a] block mb-3">
                 event
               </span>
-              <p className="text-gray-600 mb-4">没有找到活动</p>
+              <p className="text-[#8ba3a6] mb-4">没有找到活动</p>
               <Link href="/admin/activities/create">
                 <Button 
                   variant="primary"
-                  className="bg-[#137fec]! hover:bg-[#0f5fcc]!"
+                  style={{ backgroundColor: '#137fec', color: 'white' }}
                 >
                   创建第一个活动
                 </Button>
@@ -316,16 +315,16 @@ export default function AdminActivities() {
         {/* 删除确认对话框 */}
         {deleteId && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full mx-4">
-              <h3 className="text-black font-bold text-lg mb-2">确定删除此活动？</h3>
-              <p className="text-gray-600 text-sm mb-6">
+            <div className="bg-[#1a2632] border border-[#2a3c4a] rounded-2xl p-6 max-w-sm w-full mx-4">
+              <h3 className="text-white font-bold text-lg mb-2">确定删除此活动？</h3>
+              <p className="text-[#8ba3a6] text-sm mb-6">
                 删除后将无法恢复，该活动的所有报名数据也将被清除。
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteId(null)}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-[#283039] text-[#8ba3a6] rounded-lg hover:bg-[#343d48] transition-colors disabled:opacity-50"
                 >
                   取消
                 </button>

@@ -36,6 +36,7 @@ interface Activity {
   status: string;
   coverImage: string;
   allowedGrades?: string;
+  visibility?: 'public' | 'internal';
 }
 
 const GRADE_OPTIONS = [
@@ -52,23 +53,8 @@ const GRADE_OPTIONS = [
   { value: 'senior_1_arts', label: '高一文' },
   { value: 'senior_2_arts', label: '高二文' },
   { value: 'senior_3_arts', label: '高三文' },
+  { value: 'other', label: '其他（校外人员）' },
 ];
-
-const MOCK_ACTIVITY: Activity = {
-  id: '1',
-  title: 'Python 数据科学入门工作坊',
-  description: '面向初学者的 Python 数据科学工作坊，学习 Pandas 和 NumPy 基础。',
-  category: '工作坊',
-  startTime: '2026-01-24T17:00:00Z',
-  endTime: '2026-01-24T19:00:00Z',
-  signupDeadline: '2026-01-23T23:59:00Z',
-  location: '科学楼 304',
-  organizer: 'Dr. Sarah Jenkins',
-  maxParticipants: 40,
-  currentParticipants: 24,
-  status: 'published',
-  coverImage: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800&h=450&fit=crop',
-};
 
 export default function ActivitySignupPage() {
   const params = useParams();
@@ -78,76 +64,122 @@ export default function ActivitySignupPage() {
   const [activity, setActivity] = useState<Activity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState<SignupFormData>({
     fullName: '',
-    email: user?.email || '',
+    email: '',
     studentId: '',
     grade: '',
     phone: '',
     additionalInfo: '',
   });
 
+  // 加载活动数据
   useEffect(() => {
-    // Redirect if not logged in
-    if (!authLoading && !user) {
-      router.push('/auth/login');
-      return;
-    }
-
     const loadActivity = async () => {
       try {
         setIsLoading(true);
-        // In real app, fetch from API
-        setActivity(MOCK_ACTIVITY);
-        setFormData(prev => ({
-          ...prev,
-          email: user?.email || '',
-        }));
-      } catch (error) {
-        console.error('Failed to load activity:', error);
-        alert('Failed to load activity');
+        const response = await fetch(`/api/activities/${params.id}`);
+        const data = await response.json();
+        
+        if (data.success && data.activity) {
+          setActivity(data.activity);
+        } else {
+          setError('活动未找到');
+        }
+      } catch (err) {
+        console.error('Failed to load activity:', err);
+        setError('加载活动失败');
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (!authLoading) {
+    if (params.id) {
       loadActivity();
     }
-  }, [user, authLoading, router]);
+  }, [params.id]);
+
+  // 如果用户已登录，预填邮箱
+  useEffect(() => {
+    if (user?.email) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email,
+      }));
+    }
+  }, [user]);
+
+  // 检查活动是否需要登录（内部活动）
+  useEffect(() => {
+    if (!authLoading && activity) {
+      // 如果是内部活动且用户未登录，重定向到登录页
+      if (activity.visibility === 'internal' && !user) {
+        router.push('/auth/login?redirect=' + encodeURIComponent(`/activities/${params.id}/signup`));
+      }
+    }
+  }, [activity, user, authLoading, router, params.id]);
 
   const handleInputChange = (field: keyof SignupFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setError(''); // 清除错误
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
 
-    // Validation
+    // 验证
     if (!formData.fullName.trim()) {
-      alert('Please enter your full name');
+      setError('请输入您的全名');
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError('请输入邮箱地址');
       return;
     }
     if (!formData.grade) {
-      alert('Please select your grade');
+      setError('请选择您的年级');
       return;
     }
     if (!formData.phone.trim()) {
-      alert('Please enter your phone number');
+      setError('请输入电话号码');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // In real app, submit to API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      alert('Successfully signed up for this activity!');
-      setTimeout(() => {
-        router.push(`/activities/${params.id}`);
-      }, 1500);
-    } catch (error) {
-      console.error('Signup failed:', error);
-      alert('Failed to sign up. Please try again.');
+      const response = await fetch('/api/activities/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          activityId: params.id,
+          fullName: formData.fullName,
+          email: formData.email,
+          studentId: formData.studentId,
+          grade: formData.grade,
+          phone: formData.phone,
+          additionalInfo: formData.additionalInfo,
+          userId: user?.id || null, // 可以为空（访客报名）
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          router.push(`/activities/${params.id}`);
+        }, 2000);
+      } else {
+        setError(result.error || '报名失败，请稍后重试');
+      }
+    } catch (err) {
+      console.error('Signup failed:', err);
+      setError('网络错误，请稍后重试');
     } finally {
       setIsSubmitting(false);
     }
@@ -163,7 +195,8 @@ export default function ActivitySignupPage() {
     );
   }
 
-  if (!activity) {
+  // 活动未找到
+  if (!activity || error === '活动未找到') {
     return (
       <StudentLayout>
         <div className="flex-1 flex items-center justify-center" style={{ backgroundColor: 'var(--background)', minHeight: '400px' }}>
@@ -179,8 +212,41 @@ export default function ActivitySignupPage() {
     );
   }
 
-  const isFull = activity.currentParticipants >= activity.maxParticipants;
+  // 内部活动但用户未登录
+  if (activity.visibility === 'internal' && !user) {
+    return (
+      <StudentLayout>
+        <div className="flex-1 flex items-center justify-center" style={{ backgroundColor: 'var(--background)', minHeight: '400px' }}>
+          <div className="text-center">
+            <span className="material-symbols-outlined text-5xl mb-4" style={{ color: 'var(--primary)' }}>lock</span>
+            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>此活动仅限学生报名</h2>
+            <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>请先登录后再报名此活动</p>
+            <Link href={`/auth/login?redirect=${encodeURIComponent(`/activities/${params.id}/signup`)}`}>
+              <Button variant="primary">登录</Button>
+            </Link>
+          </div>
+        </div>
+      </StudentLayout>
+    );
+  }
+
+  const isFull = activity.maxParticipants > 0 && activity.currentParticipants >= activity.maxParticipants;
   const isDeadlinePassed = new Date(activity.signupDeadline) < new Date();
+
+  // 报名成功
+  if (success) {
+    return (
+      <StudentLayout>
+        <div className="flex-1 flex items-center justify-center" style={{ backgroundColor: 'var(--background)', minHeight: '400px' }}>
+          <div className="text-center">
+            <span className="material-symbols-outlined text-5xl mb-4" style={{ color: '#13ec80' }}>check_circle</span>
+            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>报名成功！</h2>
+            <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>正在返回活动详情页...</p>
+          </div>
+        </div>
+      </StudentLayout>
+    );
+  }
 
   return (
     <StudentLayout>
@@ -206,6 +272,12 @@ export default function ActivitySignupPage() {
           <p style={{ color: 'var(--text-secondary)' }}>
             填写以下信息完成对《{activity.title}》的报名
           </p>
+          {activity.visibility === 'public' && !user && (
+            <p className="mt-2 text-sm" style={{ color: '#13ec80' }}>
+              <span className="material-symbols-outlined text-sm align-middle mr-1">public</span>
+              此为公开活动，校外人员也可报名
+            </p>
+          )}
         </div>
 
         {/* 活动摘要卡片 */}
@@ -213,7 +285,7 @@ export default function ActivitySignupPage() {
           <div className="flex gap-6 items-start">
             {/* 活动图片 */}
             <div className="w-32 h-32 rounded-lg flex-shrink-0 overflow-hidden">
-              <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${activity.coverImage})` }} />
+              <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${activity.coverImage || 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800&h=450&fit=crop'})` }} />
             </div>
 
             {/* 活动信息 */}
@@ -232,16 +304,26 @@ export default function ActivitySignupPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined">group</span>
-                  <span>{activity.currentParticipants} / {activity.maxParticipants} 人</span>
+                  <span>{activity.currentParticipants} / {activity.maxParticipants || '不限'} 人</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* 错误提示 */}
+        {error && (
+          <div className="mb-8 rounded-lg border-l-4 p-4" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgb(239, 68, 68)', color: 'rgb(239, 68, 68)' }}>
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined mt-0.5">error</span>
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
+
         {/* 报名状态提示 */}
         {isFull && (
-          <div className="mb-8 rounded-lg border-l-4 p-4" style={{ backgroundColor: 'rgb(239, 68, 68)', borderColor: 'rgb(220, 38, 38)', color: 'white' }}>
+          <div className="mb-8 rounded-lg border-l-4 p-4" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgb(239, 68, 68)', color: 'rgb(239, 68, 68)' }}>
             <div className="flex items-start gap-3">
               <span className="material-symbols-outlined mt-0.5">info</span>
               <div>
@@ -253,7 +335,7 @@ export default function ActivitySignupPage() {
         )}
 
         {isDeadlinePassed && !isFull && (
-          <div className="mb-8 rounded-lg border-l-4 p-4" style={{ backgroundColor: 'rgb(245, 158, 11)', borderColor: 'rgb(217, 119, 6)', color: 'white' }}>
+          <div className="mb-8 rounded-lg border-l-4 p-4" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgb(245, 158, 11)', color: 'rgb(245, 158, 11)' }}>
             <div className="flex items-start gap-3">
               <span className="material-symbols-outlined mt-0.5">warning</span>
               <div>
@@ -285,17 +367,21 @@ export default function ActivitySignupPage() {
             {/* 邮箱 */}
             <div>
               <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
-                邮箱地址
+                邮箱地址 <span style={{ color: 'var(--primary)' }}>*</span>
               </label>
               <Input
                 type="email"
-                placeholder="your.email@school.edu"
+                placeholder="your.email@example.com"
                 value={formData.email}
-                disabled
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                disabled={isSubmitting || !!user}
+                required
               />
-              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                账户邮箱地址，无法修改
-              </p>
+              {user && (
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  账户邮箱地址，无法修改
+                </p>
+              )}
             </div>
 
             {/* 学号 */}
@@ -305,7 +391,7 @@ export default function ActivitySignupPage() {
               </label>
               <Input
                 type="text"
-                placeholder="例如: 2024001"
+                placeholder="例如: 2024001（校外人员可留空）"
                 value={formData.studentId}
                 onChange={(e) => handleInputChange('studentId', e.target.value)}
                 disabled={isSubmitting}
