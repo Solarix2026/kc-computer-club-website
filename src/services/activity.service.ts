@@ -24,6 +24,7 @@ export interface Activity {
   organizer: string;
   organizerId: string;
   status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
+  visibility: 'public' | 'internal';
   coverImage?: string;
   allowedGrades?: string; // JSON string of allowed grades array
   publishedAt?: string;
@@ -45,6 +46,7 @@ export interface CreateActivityInput {
   organizer: string;
   organizerId: string;
   status: 'draft' | 'published';
+  visibility?: 'public' | 'internal';
   coverImage?: string | null;
   allowedGrades?: string | null; // JSON string of allowed grades array
 }
@@ -63,16 +65,31 @@ export interface UpdateActivityInput {
   organizer?: string;
   organizerId?: string;
   status?: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
+  visibility?: 'public' | 'internal';
   coverImage?: string | null;
   allowedGrades?: (string | null);
 }
 
 // Activity Service
 export const activityService = {
-  // Get all activities (optionally filtered by status)
-  async getAllActivities(onlyPublished: boolean = false): Promise<Activity[]> {
+  /**
+   * 获取所有活动（可选过滤已发布和可见范围）
+   * @param onlyPublished - 仅获取已发布活动
+   * @param visibility - 可见范围过滤：'public' 仅公开，'all' 包含内部（需登录）
+   */
+  async getAllActivities(onlyPublished: boolean = false, visibility: 'public' | 'all' = 'all'): Promise<Activity[]> {
     try {
-      const queries = onlyPublished ? [Query.equal('status', 'published')] : [];
+      const queries: ReturnType<typeof Query.equal>[] = [];
+      
+      if (onlyPublished) {
+        queries.push(Query.equal('status', 'published'));
+      }
+      
+      // 如果只要公开活动，过滤掉内部活动
+      if (visibility === 'public') {
+        queries.push(Query.equal('visibility', 'public'));
+      }
+      
       const response = await databases.listDocuments(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         'activities',
@@ -105,6 +122,7 @@ export const activityService = {
   // Create a new activity
   async createActivity(input: CreateActivityInput): Promise<Activity> {
     try {
+      const now = new Date().toISOString();
       const response = await databases.createDocument(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         'activities',
@@ -123,8 +141,11 @@ export const activityService = {
           organizer: input.organizer,
           organizerId: input.organizerId,
           status: input.status,
+          visibility: input.visibility || 'public',
           coverImage: input.coverImage || undefined,
           allowedGrades: input.allowedGrades || undefined,
+          createdAt: now,
+          updatedAt: now,
         }
       );
       return response as unknown as Activity;

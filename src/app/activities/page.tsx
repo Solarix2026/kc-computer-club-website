@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Loading } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Activity {
   id: string;
@@ -113,15 +114,21 @@ export default function ActivitiesPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
+    // 等待认证加载完成后再获取活动
+    if (authLoading) return;
+    
     const loadActivities = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/activities?onlyPublished=true');
+        // 如果用户已登录，获取所有活动；否则只获取公开活动
+        const visibility = user ? 'all' : 'public';
+        const response = await fetch(`/api/activities?onlyPublished=true&visibility=${visibility}`);
         const data = await response.json();
         
-        if (data.success && data.activities && data.activities.length > 0) {
+        if (data.success && data.activities) {
           const formattedActivities = data.activities.map((activity: Record<string, unknown>) => {
             // 检查报名是否已截止
             const signupDeadline = activity.signupDeadline as string;
@@ -151,24 +158,20 @@ export default function ActivitiesPage() {
             setSelectedActivity(formattedActivities[0]);
           }
         } else {
-          setActivities(MOCK_ACTIVITIES);
-          if (MOCK_ACTIVITIES.length > 0) {
-            setSelectedActivity(MOCK_ACTIVITIES[0]);
-          }
+          // API调用失败时显示空列表
+          setActivities([]);
         }
       } catch (err) {
         console.error('加载活动失败:', err);
-        setActivities(MOCK_ACTIVITIES);
-        if (MOCK_ACTIVITIES.length > 0) {
-          setSelectedActivity(MOCK_ACTIVITIES[0]);
-        }
+        // 网络错误时显示空列表
+        setActivities([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadActivities();
-  }, []);
+  }, [user, authLoading]);
 
   // 过滤活动
   const filteredActivities = activities.filter((activity) => {

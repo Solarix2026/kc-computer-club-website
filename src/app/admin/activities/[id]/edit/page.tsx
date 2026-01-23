@@ -23,6 +23,7 @@ interface ActivityFormData {
   coverImageUrl: string; // URL from input field
   coverImageFile: File | null; // File from upload
   status: 'draft' | 'published';
+  visibility: 'public' | 'internal';
   allowedGrades: string[];
 }
 
@@ -40,6 +41,7 @@ const INITIAL_FORM_DATA: ActivityFormData = {
   coverImageUrl: '',
   coverImageFile: null,
   status: 'draft',
+  visibility: 'public',
   allowedGrades: [],
 };
 
@@ -84,6 +86,7 @@ export default function EditActivity({ params }: { params: Promise<{ id: string 
             coverImageUrl: activity.coverImage || '',
             coverImageFile: null,
             status: activity.status === 'published' ? 'published' : 'draft',
+            visibility: (activity.visibility as 'public' | 'internal') || 'public',
             allowedGrades: activity.allowedGrades ? JSON.parse(activity.allowedGrades) : [],
           });
         } else {
@@ -159,6 +162,7 @@ export default function EditActivity({ params }: { params: Promise<{ id: string 
           organizerId: user?.id || '',
           coverImage: coverImageUrl,
           status: formData.status,
+          visibility: formData.visibility,
           allowedGrades: formData.allowedGrades,
         }),
       });
@@ -622,6 +626,43 @@ export default function EditActivity({ params }: { params: Promise<{ id: string 
                   <label htmlFor="published" className="text-gray-400 text-sm cursor-pointer flex-1">
                     立即发布
                   </label>
+                </div>
+              </div>
+
+              {/* 可见范围 */}
+              <div className="mb-6">
+                <h3 className="text-white font-semibold mb-3 text-sm">可见范围</h3>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="radio"
+                      id="public"
+                      name="visibility"
+                      value="public"
+                      checked={formData.visibility === 'public'}
+                      onChange={handleChange}
+                      className="cursor-pointer"
+                    />
+                    <label htmlFor="public" className="text-gray-400 text-sm cursor-pointer flex-1 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-green-400 text-base">public</span>
+                      公开（所有人可见）
+                    </label>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="radio"
+                      id="internal"
+                      name="visibility"
+                      value="internal"
+                      checked={formData.visibility === 'internal'}
+                      onChange={handleChange}
+                      className="cursor-pointer"
+                    />
+                    <label htmlFor="internal" className="text-gray-400 text-sm cursor-pointer flex-1 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-blue-400 text-base">lock</span>
+                      内部（仅学生可见）
+                    </label>
+                  </div>
                 </div>
               </div>
 

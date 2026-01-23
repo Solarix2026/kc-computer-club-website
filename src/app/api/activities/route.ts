@@ -5,14 +5,17 @@ import { Client, Databases, Query } from 'appwrite';
 
 /**
  * GET /api/activities - 获取所有活动
- * 查询参数: onlyPublished=true (仅获取已发布)
+ * 查询参数: 
+ *   - onlyPublished=true (仅获取已发布)
+ *   - visibility=public|all (可见范围，默认all)
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const onlyPublished = searchParams.get('onlyPublished') === 'true';
+    const visibility = (searchParams.get('visibility') as 'public' | 'all') || 'all';
 
-    const activities = await activityService.getAllActivities(onlyPublished);
+    const activities = await activityService.getAllActivities(onlyPublished, visibility);
 
     // 实时统计每个活动的报名数
     const client = new Client()
@@ -82,6 +85,7 @@ export async function POST(request: NextRequest) {
       status,
       coverImage,
       allowedGrades,
+      visibility,
     } = body;
 
     // 验证必填字段
@@ -114,6 +118,7 @@ export async function POST(request: NextRequest) {
       status: status || 'draft',
       coverImage: coverImage || undefined,
       allowedGrades: allowedGrades && allowedGrades.length > 0 ? JSON.stringify(allowedGrades) : undefined,
+      visibility: visibility || 'public',
     };
 
     const activity = await activityService.createActivity(input);

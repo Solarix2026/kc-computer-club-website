@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Loading } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 临时模拟数据
 interface NormalizedNotice {
@@ -122,12 +123,15 @@ export default function NoticesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadNotices = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/notices?onlyPublished=true');
+        // 如果用户已登录，获取所有公告；否则只获取公开公告
+        const visibility = user ? 'all' : 'public';
+        const response = await fetch(`/api/notices?onlyPublished=true&visibility=${visibility}`);
         const data = await response.json();
         if (data.success && data.notices) {
           const normalizedNotices = data.notices.map((notice: Record<string, unknown>) => {
@@ -179,7 +183,7 @@ export default function NoticesPage() {
       }
     };
     loadNotices();
-  }, []);
+  }, [user]);
 
   // 过滤公告
   const filteredNotices = notices.filter((notice) => {

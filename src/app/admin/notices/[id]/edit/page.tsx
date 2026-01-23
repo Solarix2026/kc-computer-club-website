@@ -13,6 +13,7 @@ interface NoticeFormData {
   category: string;
   content: string;
   status: 'draft' | 'published';
+  visibility: 'public' | 'internal';
   tags: string;
   images: string[];
 }
@@ -36,6 +37,7 @@ export default function EditNotice({ params }: { params: Promise<{ id: string }>
     category: '活动通知',
     content: '',
     status: 'draft',
+    visibility: 'public',
     tags: '',
     images: [],
   });
@@ -62,6 +64,7 @@ export default function EditNotice({ params }: { params: Promise<{ id: string }>
           category: notice.category,
           content: notice.content,
           status: notice.status as 'draft' | 'published',
+          visibility: (notice.visibility as 'public' | 'internal') || 'public',
           tags: Array.isArray(notice.tags) ? notice.tags.join(', ') : '',
           images: notice.images || [],
         });
@@ -108,6 +111,7 @@ export default function EditNotice({ params }: { params: Promise<{ id: string }>
           content: formData.content,
           category: formData.category,
           status: formData.status,
+          visibility: formData.visibility,
           images: formData.images.length > 0 ? formData.images : undefined,
           tags: formData.tags
             ? formData.tags.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag)
@@ -509,6 +513,43 @@ export default function EditNotice({ params }: { params: Promise<{ id: string }>
                   <label htmlFor="published" className="text-gray-400 text-sm cursor-pointer flex-1">
                     立即发布
                   </label>
+                </div>
+              </div>
+
+              {/* 可见范围 */}
+              <div className="mb-6">
+                <h3 className="text-white font-semibold mb-3 text-sm">可见范围</h3>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="radio"
+                      id="public"
+                      name="visibility"
+                      value="public"
+                      checked={formData.visibility === 'public'}
+                      onChange={handleChange}
+                      className="cursor-pointer"
+                    />
+                    <label htmlFor="public" className="text-gray-400 text-sm cursor-pointer flex-1 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-green-400 text-base">public</span>
+                      公开（所有人可见）
+                    </label>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="radio"
+                      id="internal"
+                      name="visibility"
+                      value="internal"
+                      checked={formData.visibility === 'internal'}
+                      onChange={handleChange}
+                      className="cursor-pointer"
+                    />
+                    <label htmlFor="internal" className="text-gray-400 text-sm cursor-pointer flex-1 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-blue-400 text-base">lock</span>
+                      内部（仅学生可见）
+                    </label>
+                  </div>
                 </div>
               </div>
 

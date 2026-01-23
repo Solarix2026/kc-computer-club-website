@@ -20,6 +20,7 @@ export interface Notice {
   lastEditorName?: string;
   category: string;
   status: 'draft' | 'published';
+  visibility: 'public' | 'internal';
   images?: string[];
   tags?: string;
   publishedAt?: string;
@@ -34,6 +35,7 @@ export interface CreateNoticeInput {
   authorId: string;
   author: string;
   status?: 'draft' | 'published';
+  visibility?: 'public' | 'internal';
   images?: string[];
   tags?: string[];
 }
@@ -43,6 +45,7 @@ export interface UpdateNoticeInput {
   content?: string;
   category?: string;
   status?: 'draft' | 'published';
+  visibility?: 'public' | 'internal';
   images?: string[];
   tags?: string[];
   publishedAt?: string;
@@ -51,11 +54,23 @@ export interface UpdateNoticeInput {
 }
 
 /**
- * 获取所有公告（可选过滤已发布）
+ * 获取所有公告（可选过滤已发布和可见范围）
+ * @param onlyPublished - 仅获取已发布公告
+ * @param visibility - 可见范围过滤：'public' 仅公开，'all' 包含内部（需登录）
  */
-export async function getAllNotices(onlyPublished = false): Promise<Notice[]> {
+export async function getAllNotices(onlyPublished = false, visibility: 'public' | 'all' = 'all'): Promise<Notice[]> {
   try {
-    const queries = onlyPublished ? [Query.equal('status', 'published')] : [];
+    const queries: ReturnType<typeof Query.equal>[] = [];
+    
+    if (onlyPublished) {
+      queries.push(Query.equal('status', 'published'));
+    }
+    
+    // 如果只要公开公告，过滤掉内部公告
+    if (visibility === 'public') {
+      queries.push(Query.equal('visibility', 'public'));
+    }
+    
     const response = await databases.listDocuments(
       APPWRITE_DATABASE_ID,
       NOTICES_COLLECTION_ID,
@@ -153,7 +168,10 @@ export async function createNotice(input: CreateNoticeInput): Promise<Notice> {
       author: input.author,
       authorId: input.authorId,
       status: input.status || 'draft',
+      visibility: input.visibility || 'public',
       tags: input.tags ? JSON.stringify(input.tags) : '[]',
+      createdAt: now,
+      updatedAt: now,
       publishedAt: input.status === 'published' ? now : null,
     };
 
@@ -192,6 +210,7 @@ export async function updateNotice(
     if (input.title) updateData.title = input.title;
     if (input.content) updateData.content = input.content;
     if (input.category) updateData.category = input.category;
+    if (input.visibility) updateData.visibility = input.visibility;
     if (input.status) {
       updateData.status = input.status;
       if (input.status === 'published') {

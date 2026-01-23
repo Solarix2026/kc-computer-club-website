@@ -8,14 +8,17 @@ import {
 
 /**
  * GET /api/notices - 获取所有公告
- * 查询参数: onlyPublished=true (仅获取已发布)
+ * 查询参数: 
+ *   - onlyPublished=true (仅获取已发布)
+ *   - visibility=public|all (可见范围，默认all)
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const onlyPublished = searchParams.get('onlyPublished') === 'true';
+    const visibility = (searchParams.get('visibility') as 'public' | 'all') || 'all';
 
-    const notices = await getAllNotices(onlyPublished);
+    const notices = await getAllNotices(onlyPublished, visibility);
 
     return NextResponse.json({
       success: true,
@@ -38,7 +41,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, content, category, authorId, author, status, images, tags } = body;
+    const { title, content, category, authorId, author, status, images, tags, visibility } = body;
 
     // 验证必填字段
     if (!title || !content || !category || !authorId || !author) {
@@ -57,6 +60,7 @@ export async function POST(request: NextRequest) {
       status: status || 'draft',
       images,
       tags,
+      visibility: visibility || 'public',
     };
 
     const notice = await createNotice(input);
