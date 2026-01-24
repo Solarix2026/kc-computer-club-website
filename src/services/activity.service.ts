@@ -85,17 +85,21 @@ export const activityService = {
         queries.push(Query.equal('status', 'published'));
       }
       
-      // 如果只要公开活动，过滤掉内部活动
-      if (visibility === 'public') {
-        queries.push(Query.equal('visibility', 'public'));
-      }
-      
       const response = await databases.listDocuments(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         'activities',
         queries
       );
-      const activities = (response.documents as unknown as Activity[]) || [];
+      let activities = (response.documents as unknown as Activity[]) || [];
+      
+      // 如果只要公开活动，在客户端过滤掉内部活动
+      // 这样可以正确处理 visibility 为 null/undefined 的情况（视为公开）
+      if (visibility === 'public') {
+        activities = activities.filter(activity => 
+          activity.visibility !== 'internal'
+        );
+      }
+      
       // 按createdAt降序排列，最新的在最前面
       return activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
