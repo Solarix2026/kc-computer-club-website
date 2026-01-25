@@ -12,7 +12,7 @@ import Link from 'next/link';
 
 /**
  * 管理员手动创建学生账户页面
- * 允许管理员单独添加学生，设置默认密码 11111111
+ * 允许管理员单独添加学生，默认密码为学生学号
  */
 
 // 分组级别选项
@@ -194,7 +194,7 @@ export default function CreateStudentPage() {
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">创建学生账户</h1>
           <p className="text-gray-400">
-            手动添加新学生到系统。默认密码为 <code className="bg-[#283a4f] px-2 py-0.5 rounded text-[#137fec]">11111111</code>，学生首次登录需修改密码。
+            手动添加新学生到系统。默认密码为 <code className="bg-[#283a4f] px-2 py-0.5 rounded text-[#137fec]">学号</code>，学生首次登录需修改密码。
           </p>
         </div>
 
@@ -390,7 +390,7 @@ export default function CreateStudentPage() {
                     value={formData.customPassword}
                     onChange={(e) => handleChange('customPassword', e.target.value)}
                     leftIcon="key"
-                    hint="如果密码与默认密码相同，学生仍需在首次登录时修改密码"
+                    hint="如果未设置密码，系统将使用学号作为初始密码，学生首次登录时需修改密码"
                   />
                 </div>
               )}

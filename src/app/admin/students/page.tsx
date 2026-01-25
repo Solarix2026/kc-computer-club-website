@@ -283,7 +283,6 @@ export default function StudentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           students: importPreview.students,
-          defaultPassword: defaultPassword,
         }),
       });
 
@@ -738,27 +737,17 @@ export default function StudentsPage() {
                       </div>
                     </div>
 
-                    {/* 默认密码 */}
+                    {/* 默认密码提示 */}
                     <div style={{ marginBottom: '24px', backgroundColor: '#101922', padding: '16px', borderRadius: '10px' }}>
-                      <label style={{ display: 'block', color: '#8a9e94', fontSize: '12px', marginBottom: '6px' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px', marginRight: '4px', verticalAlign: 'middle' }}>lock</span>
-                        默认密码（所有导入学生）
-                      </label>
-                      <input
-                        type="text"
-                        value={defaultPassword}
-                        onChange={(e) => setDefaultPassword(e.target.value)}
-                        style={{
-                          width: '100%',
-                          maxWidth: '300px',
-                          padding: '10px',
-                          backgroundColor: '#1a2632',
-                          border: '1px solid #2a3c4a',
-                          borderRadius: '8px',
-                          color: 'white',
-                          fontSize: '14px',
-                        }}
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '8px', color: '#13ec80' }}>lock</span>
+                        <span style={{ color: '#8a9e94', fontSize: '14px', fontWeight: '500' }}>默认密码设置</span>
+                      </div>
+                      <div style={{ color: '#6a8a7a', fontSize: '13px', lineHeight: '1.6' }}>
+                        <p style={{ margin: '4px 0' }}>• 系统将自动使用学生的 <strong style={{ color: '#13ec80' }}>学号</strong> 作为初始密码</p>
+                        <p style={{ margin: '4px 0' }}>• 学生首次登录时将被强制修改密码</p>
+                        <p style={{ margin: '4px 0' }}>• 新密码不能与学号或默认密码相同</p>
+                      </div>
                     </div>
 
                     {/* 预览数据 */}

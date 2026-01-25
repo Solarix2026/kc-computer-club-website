@@ -71,6 +71,15 @@ export async function POST(request: NextRequest) {
     // 默认密码：使用学号作为初始密码
     const studentIdTrimmed = studentId.trim();
     const actualPassword = password || studentIdTrimmed;
+    
+    console.log('=== Student Creation Debug ===');
+    console.log('Original studentId:', studentId);
+    console.log('Trimmed studentId:', studentIdTrimmed);
+    console.log('Custom password provided:', password);
+    console.log('Actual password to hash:', actualPassword);
+    console.log('Password type:', typeof actualPassword);
+    console.log('Password length:', actualPassword?.length);
+    
     const passwordHash = await bcrypt.hash(actualPassword, 10);
     // 如果使用学号作为密码，标记为需要修改密码
     const requirePasswordChange = (actualPassword === studentIdTrimmed || actualPassword === DEFAULT_STUDENT_PASSWORD);

@@ -171,7 +171,19 @@ export async function changeStudentPassword(
       throw new Error('账户密码数据异常');
     }
 
+    // Debug logging
+    console.log('=== Password Change Debug ===');
+    console.log('Current password received:', currentPassword);
+    console.log('Current password type:', typeof currentPassword);
+    console.log('Current password length:', currentPassword?.length);
+    console.log('Student ID from record:', studentRecord.studentId);
+    console.log('Student ID type:', typeof studentRecord.studentId);
+    console.log('Are they equal?:', currentPassword === studentRecord.studentId);
+    console.log('Password hash exists:', !!passwordHash);
+
     const isPasswordCorrect = await bcrypt.compare(currentPassword, passwordHash);
+    console.log('Bcrypt comparison result:', isPasswordCorrect);
+    
     if (!isPasswordCorrect) {
       throw new Error('当前密码不正确');
     }
