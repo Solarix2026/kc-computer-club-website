@@ -84,6 +84,13 @@ export default function StudentLoginPage() {
       return;
     }
 
+    // 检查新密码不能与学号相同
+    const studentId = email.replace(/@kuencheng\.edu\.my$/, '');
+    if (newPassword === studentId) {
+      setChangePasswordError('新密码不能与学号相同');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setChangePasswordError('两次输入的密码不一致');
       return;
@@ -350,7 +357,7 @@ export default function StudentLoginPage() {
             </form>
 
             <p className="text-center text-[var(--text-secondary)] text-xs mt-4">
-              * 新密码不能与默认密码相同
+              * 新密码不能与学号或默认密码相同
             </p>
           </div>
         </div>

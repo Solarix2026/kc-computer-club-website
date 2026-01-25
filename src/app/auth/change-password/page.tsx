@@ -66,6 +66,12 @@ export default function ChangePasswordPage() {
       return;
     }
 
+    // 检查新密码不能与学号相同
+    if (user && 'studentId' in user && user.studentId && newPassword === user.studentId) {
+      setError('新密码不能与学号相同');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {

@@ -176,9 +176,15 @@ export async function changeStudentPassword(
       throw new Error('当前密码不正确');
     }
 
-    // 3. 检查新密码不能与默认密码相同
+    // 3. 检查新密码不能与默认密码或学号相同
     if (newPassword === DEFAULT_STUDENT_PASSWORD) {
       throw new Error('新密码不能为默认密码');
+    }
+    
+    // 检查新密码不能与学号相同
+    const studentIdFromRecord = studentRecord.studentId;
+    if (studentIdFromRecord && newPassword === studentIdFromRecord) {
+      throw new Error('新密码不能与学号相同');
     }
 
     // 4. 密码强度验证

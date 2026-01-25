@@ -68,9 +68,12 @@ export async function POST(request: NextRequest) {
 
     // 创建用户记录
     const now = new Date().toISOString();
-    const actualPassword = password || DEFAULT_STUDENT_PASSWORD;
+    // 默认密码：使用学号作为初始密码
+    const studentIdTrimmed = studentId.trim();
+    const actualPassword = password || studentIdTrimmed;
     const passwordHash = await bcrypt.hash(actualPassword, 10);
-    const requirePasswordChange = actualPassword === DEFAULT_STUDENT_PASSWORD;
+    // 如果使用学号作为密码，标记为需要修改密码
+    const requirePasswordChange = (actualPassword === studentIdTrimmed || actualPassword === DEFAULT_STUDENT_PASSWORD);
 
     const newStudent = await serverDatabases.createDocument(
       APPWRITE_DATABASE_ID,
