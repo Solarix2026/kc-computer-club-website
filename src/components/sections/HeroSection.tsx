@@ -4,7 +4,6 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
-import { useClub } from '@/contexts/ClubContext';
 
 // ========================================
 // HeroSection 组件
@@ -24,10 +23,10 @@ interface HeroSectionProps {
   activeUsers?: number;
   /** 容量百分比 */
   capacityPercent?: number;
-  /** 特色项目标题 */
-  featuredProjectTitle?: string;
-  /** 特色项目贡献者数 */
-  featuredProjectContributors?: number;
+  /** Hero 图像路径 */
+  heroImage?: string;
+  /** Hero 图像替代文字 */
+  heroImageAlt?: string;
   className?: string;
 }
 
@@ -40,25 +39,14 @@ export function HeroSection({
   statusText = '正在招收新成员',
   activeUsers = 24,
   capacityPercent = 45,
-  featuredProjectTitle = 'Campus AI Bot',
-  featuredProjectContributors = 5,
+  heroImage,
+  heroImageAlt = 'Hero Image',
   className,
 }: HeroSectionProps) {
-  const { clubInfo } = useClub();
-  // 这里假设 clubInfo.logoUrl 和 clubInfo.clubName 已经有值
-  // 你可以根据实际 API 增加更多字段
-  // 额外：尝试从 localStorage 读取 clubSettings 以获取官网链接
-  let website = '';
-  if (typeof window !== 'undefined') {
-    try {
-      const clubSettings = JSON.parse(localStorage.getItem('clubInfo') || '{}');
-      website = clubSettings.website || '';
-    } catch {}
-  }
   return (
-    <section className={cn('grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-120', className)}>
-      {/* 主 Hero 卡片 */}
-      <div className="lg:col-span-8 relative flex flex-col justify-end overflow-hidden rounded-3xl bg-[var(--surface)] p-8 md:p-12 group border border-[var(--border)]">
+    <section className={cn('grid grid-cols-1 gap-6 min-h-160', className)}>
+      {/* 主 Hero 卡片 - 两列布局 */}
+      <div className="relative flex flex-col lg:flex-row items-center justify-between overflow-hidden rounded-3xl bg-[var(--surface)] p-8 md:p-12 group border border-[var(--border)] min-h-160">
         {/* 抽象背景图案 */}
         <div 
           className="absolute inset-0 z-0 opacity-40 mix-blend-overlay pointer-events-none"
@@ -72,7 +60,8 @@ export function HeroSection({
           <span className="text-primary font-black text-3xl">KC</span>
         </div>
         
-        <div className="relative z-10 flex flex-col gap-6 max-w-2xl">
+        {/* 左侧内容 */}
+        <div className="relative z-10 flex flex-col gap-6 max-w-2xl flex-1">
           {/* 状态标签 */}
           <div className="inline-flex items-center w-fit rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary backdrop-blur-sm">
             <span className="flex size-2 rounded-full bg-primary mr-2 animate-pulse" />
@@ -93,63 +82,30 @@ export function HeroSection({
           {/* CTA 按钮组 */}
           <div className="flex flex-wrap gap-4 pt-2">
             <Link href="/activities">
+              <Button variant="primary" size="lg">
+                立即加入
+              </Button>
+            </Link>
+            <Link href="/activities">
               <Button variant="secondary" size="lg">
                 查看活动
               </Button>
             </Link>
           </div>
         </div>
-      </div>
-      
-      {/* 侧边信息栏 */}
-      <div className="lg:col-span-4 flex flex-col gap-6">
-        {/* 其他信息卡片（含 logo） */}
-        <div className="flex-1 rounded-3xl bg-[var(--surface)] p-6 border border-[var(--border)] flex flex-col justify-center items-center gap-3">
-          <h3 className="text-[var(--text-secondary)] font-medium mb-2">其他</h3>
-          {clubInfo.logoUrl ? (
-            <a href={website || '#'} target="_blank" rel="noopener noreferrer" className="block mb-2">
-              <img
-                src={clubInfo.logoUrl}
-                alt={clubInfo.clubName + ' logo'}
-                className="w-20 h-20 object-contain rounded-xl border border-[var(--border)] shadow"
-              />
-            </a>
-          ) : (
-            <span className="text-4xl text-[var(--text-secondary)]">—</span>
-          )}
-          {clubInfo.clubName && <div className="text-sm text-[var(--text-secondary)]">{clubInfo.clubName}</div>}
-        </div>
 
-        {/* 新增：社团官网卡片 */}
-        {website && (
-          <div className="flex-1 rounded-3xl bg-[var(--surface)] p-6 border border-[var(--border)] flex flex-col justify-center items-center gap-2">
-            <h3 className="text-[var(--text-secondary)] font-medium mb-2">社团官网</h3>
-            <a href={website} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all text-center">
-              {website}
-            </a>
-          </div>
-        )}
-        
-        {/* 特色项目卡片 */}
-        <div className="flex-1 rounded-3xl bg-[var(--surface)] p-6 border border-[var(--border)] relative overflow-hidden group hover:border-primary/30 transition-colors cursor-pointer">
-          <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent z-10 dark:from-black/80 from-gray-900/60" />
-          <div 
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110 opacity-50"
-            style={{
-              backgroundImage: 'linear-gradient(135deg, var(--primary-light) 0%, var(--surface) 100%)'
-            }}
-          />
-          <div className="relative z-20 h-full flex flex-col justify-end">
-            <span className="text-primary text-xs font-bold uppercase tracking-wider mb-1">
-              本月项目
-            </span>
-            <h3 className="text-xl font-bold text-white">{featuredProjectTitle}</h3>
-            <div className="flex items-center text-gray-300 text-sm mt-2">
-              <span className="material-symbols-outlined text-[16px] mr-1">group</span>
-              {featuredProjectContributors} 位贡献者
+        {/* 右侧 Hero 图像 */}
+        {heroImage && (
+          <div className="relative z-10 flex-1 flex items-center justify-center mt-8 lg:mt-0 lg:ml-8">
+            <div className="relative w-full h-64 md:h-80 lg:h-96 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+              <img
+                src={heroImage}
+                alt={heroImageAlt}
+                className="w-full h-full object-cover object-center"
+              />
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

@@ -256,8 +256,8 @@ export default function HomePage() {
           statusText={clubStatus}
           activeUsers={clubStats?.activeUsers || 24}
           capacityPercent={clubStats?.capacityPercent || 45}
-          featuredProjectTitle={featuredProject?.title || 'Campus AI Bot'}
-          featuredProjectContributors={featuredProject?.contributors || 5}
+          heroImage="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=400&fit=crop"
+          heroImageAlt="Tech Club Hero"
         />
 
         {/* 点名系统 */}

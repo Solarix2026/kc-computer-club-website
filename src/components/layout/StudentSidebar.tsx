@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useClub } from '@/contexts/ClubContext';
 
 // ========================================
 // Student Sidebar 组件
@@ -42,6 +43,7 @@ export function StudentSidebar({ isOpen, onClose, onCollapsedChange }: StudentSi
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { clubInfo } = useClub();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleCollapse = (collapsed: boolean) => {
@@ -88,13 +90,21 @@ export function StudentSidebar({ isOpen, onClose, onCollapsedChange }: StudentSi
               sidebarCollapsed && 'justify-center'
             )}
           >
-            <div className="size-10 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-primary font-black text-lg">KC</span>
+            <div className="size-10 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {clubInfo.logoUrl ? (
+                <img
+                  src={clubInfo.logoUrl}
+                  alt="Club Logo"
+                  className="w-full h-full object-contain p-1"
+                />
+              ) : (
+                <span className="text-primary font-black text-lg">KC</span>
+              )}
             </div>
             {!sidebarCollapsed && (
               <div className="min-w-0">
                 <h2 className="text-sm font-bold text-[var(--foreground)] truncate">
-                  电脑学会
+                  {clubInfo.clubName || '电脑学会'}
                 </h2>
                 <p className="text-xs text-[var(--text-secondary)] truncate">
                   KC Computer Club
