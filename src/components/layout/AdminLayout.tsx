@@ -106,7 +106,7 @@ export function AdminLayout({
         className={cn(
           'fixed lg:fixed left-0 top-0 h-screen w-64',
           'bg-[#0d1117] border-r border-[#30363d]',
-          'flex-col',
+          'flex flex-col',
           'z-40',
           'transition-transform duration-300 ease-in-out',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'

@@ -45,7 +45,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const { breathingEffectEnabled } = useTheme();
     
-    // 基础样式 - 移动端隐藏文本，只显示图标
+    // 基础样式
     const baseStyles = `
       inline-flex items-center justify-center gap-2
       font-bold leading-normal tracking-[0.015em]
@@ -53,7 +53,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       focus:outline-none focus:ring-2 focus:ring-offset-2
       disabled:opacity-50 disabled:cursor-not-allowed
       active:scale-[0.98]
-      [&>span:not(.material-symbols-outlined)]:hidden md:[&>span:not(.material-symbols-outlined)]:inline
     `;
 
     // 变体样式
