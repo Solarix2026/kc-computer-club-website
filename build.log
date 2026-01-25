@@ -1,0 +1,108 @@
+
+> kccompt@0.1.0 build
+> next build
+
+Ôû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 10.6s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/64) ...
+  Generating static pages using 7 workers (16/64) 
+  Generating static pages using 7 workers (32/64) 
+  Generating static pages using 7 workers (48/64) 
+Ô£ô Generating static pages using 7 workers (64/64) in 1197.7ms
+  Finalizing page optimization ...
+
+Route (app)
+Ôöî Ôùï /
+Ôö£ Ôùï /_not-found
+Ôö£ Ôùï /about
+Ôö£ Ôùï /activities
+Ôö£ ãÆ /activities/[id]
+Ôö£ Ôùï /admin
+Ôö£ Ôùï /admin/activities
+Ôö£ ãÆ /admin/activities/[id]/edit
+Ôö£ ãÆ /admin/activities/[id]/signups
+Ôö£ Ôùï /admin/activities/create
+Ôö£ Ôùï /admin/admins
+Ôö£ ãÆ /admin/admins/[id]/edit
+Ôö£ Ôùï /admin/admins/create
+Ôö£ Ôùï /admin/attendance
+Ôö£ ãÆ /admin/attendance/[id]
+Ôö£ Ôùï /admin/attendance/session
+Ôö£ Ôùï /admin/comments
+Ôö£ Ôùï /admin/dashboard
+Ôö£ Ôùï /admin/login
+Ôö£ Ôùï /admin/manage
+Ôö£ ãÆ /admin/manage/[id]/edit
+Ôö£ Ôùï /admin/manage/create
+Ôö£ Ôùï /admin/notices
+Ôö£ ãÆ /admin/notices/[id]/edit
+Ôö£ Ôùï /admin/notices/create
+Ôö£ Ôùï /admin/projects
+Ôö£ Ôùï /admin/settings
+Ôö£ Ôùï /admin/signups
+Ôö£ Ôùï /admin/students
+Ôö£ Ôùï /admin/students/create
+Ôö£ ãÆ /api/activities
+Ôö£ ãÆ /api/activities/[id]
+Ôö£ ãÆ /api/admin/[id]
+Ôö£ ãÆ /api/admin/manage
+Ôö£ ãÆ /api/admin/seed
+Ôö£ ãÆ /api/admin/students
+Ôö£ ãÆ /api/admin/students/[id]
+Ôö£ ãÆ /api/admin/students/create
+Ôö£ ãÆ /api/attendance
+Ôö£ ãÆ /api/attendance/auto-mark-absent
+Ôö£ ãÆ /api/attendance/config
+Ôö£ ãÆ /api/attendance/mark-absent
+Ôö£ ãÆ /api/attendance/my-records
+Ôö£ ãÆ /api/attendance/record
+Ôö£ ãÆ /api/attendance/records
+Ôö£ ãÆ /api/attendance/student-stats
+Ôö£ ãÆ /api/auth/forgot-password
+Ôö£ ãÆ /api/auth/reset-password
+Ôö£ ãÆ /api/auth/verify-reset-token
+Ôö£ ãÆ /api/club-settings
+Ôö£ ãÆ /api/comments
+Ôö£ ãÆ /api/comments/[id]
+Ôö£ ãÆ /api/comments/[id]/reply
+Ôö£ ãÆ /api/comments/[id]/update
+Ôö£ ãÆ /api/init
+Ôö£ ãÆ /api/init/attendance
+Ôö£ ãÆ /api/init/create-club-settings
+Ôö£ ãÆ /api/notices
+Ôö£ ãÆ /api/notices/[id]
+Ôö£ ãÆ /api/notifications
+Ôö£ ãÆ /api/projects
+Ôö£ ãÆ /api/projects/[id]
+Ôö£ ãÆ /api/projects/[id]/checklist
+Ôö£ ãÆ /api/upload
+Ôö£ ãÆ /api/upload/image
+Ôö£ ãÆ /api/users/validate
+Ôö£ Ôùï /attendance
+Ôö£ Ôùï /auth/change-password
+Ôö£ Ôùï /auth/forgot-password
+Ôö£ Ôùï /auth/login
+Ôö£ Ôùï /auth/reset-password
+Ôö£ Ôùï /chat
+Ôö£ Ôùï /club-settings
+Ôö£ Ôùï /init
+Ôö£ Ôùï /notices
+Ôö£ ãÆ /notices/[id]
+Ôö£ Ôùï /profile
+Ôö£ Ôùï /projects
+Ôö£ ãÆ /projects/[id]
+Ôö£ ãÆ /projects/[id]/edit
+Ôöö Ôùï /projects/submit
+
+
+ãÆ Proxy (Middleware)
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+

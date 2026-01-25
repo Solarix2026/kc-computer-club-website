@@ -1,0 +1,35 @@
+# Prettier Ignore
+
+node_modules/
+.next/
+out/
+build/
+dist/
+.git/
+.env
+.env.local
+.env.*.local
+*.lock
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
