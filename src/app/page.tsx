@@ -119,6 +119,26 @@ export default function HomePage() {
   const [clubStats, setClubStats] = useState<{ activeUsers: number; capacityPercent: number } | null>(null);
   const [featuredProject, setFeaturedProject] = useState<{ title: string; contributors: number } | null>(null);
   const [clubStatus, setClubStatus] = useState<string>('正在招收新成员');
+  const [clubSettings, setClubSettings] = useState<{ heroImage?: string; heroImageAlt?: string } | null>(null);
+
+  // 获取社团设置（Hero 图片）
+  useEffect(() => {
+    const fetchClubSettings = async () => {
+      try {
+        const response = await fetch('/api/club-settings');
+        if (response.ok) {
+          const data = await response.json();
+          setClubSettings({
+            heroImage: data.heroImage,
+            heroImageAlt: data.heroImageAlt,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch club settings:', error);
+      }
+    };
+    fetchClubSettings();
+  }, []);
 
   // 获取公告数据
   useEffect(() => {
@@ -256,8 +276,8 @@ export default function HomePage() {
           statusText={clubStatus}
           activeUsers={clubStats?.activeUsers || 24}
           capacityPercent={clubStats?.capacityPercent || 45}
-          heroImage="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=400&fit=crop"
-          heroImageAlt="Tech Club Hero"
+          heroImage={clubSettings?.heroImage || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=400&fit=crop"}
+          heroImageAlt={clubSettings?.heroImageAlt || "Tech Club Hero"}
         />
 
         {/* 点名系统 */}

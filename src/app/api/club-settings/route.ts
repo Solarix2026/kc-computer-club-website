@@ -16,6 +16,8 @@ export interface ClubSettings {
   aboutMeetingTime: string;
   website?: string;
   logoUrl?: string;
+  heroImage?: string;
+  heroImageAlt?: string;
   activeMembers: number;
   yearlyActivities: number;
   awardProjects: number;

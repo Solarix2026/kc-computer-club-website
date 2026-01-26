@@ -19,6 +19,8 @@ interface ClubSettings {
   // 网站外观
   website?: string;
   logoUrl?: string;
+  heroImage?: string;
+  heroImageAlt?: string;
   // 统计数据
   activeMembers?: number;
   yearlyActivities?: number;
@@ -182,6 +184,8 @@ export default function AdminSettings() {
         if (data.aboutMeetingTime) clubSettings.aboutMeetingTime = data.aboutMeetingTime;
         if (data.website) clubSettings.website = data.website;
         if (data.logoUrl) clubSettings.logoUrl = data.logoUrl;
+        if (data.heroImage) clubSettings.heroImage = data.heroImage;
+        if (data.heroImageAlt) clubSettings.heroImageAlt = data.heroImageAlt;
         if (data.activeMembers) clubSettings.activeMembers = data.activeMembers;
         if (data.yearlyActivities) clubSettings.yearlyActivities = data.yearlyActivities;
         if (data.awardProjects) clubSettings.awardProjects = data.awardProjects;
@@ -617,6 +621,54 @@ export default function AdminSettings() {
                     <div className="text-sm text-gray-400">
                       <p>在导航栏和页脚显示</p>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Hero 图片 */}
+              <div>
+                <label htmlFor="heroImage" className="block text-gray-400 text-sm font-medium mb-2">
+                  主页 Hero 背景图片 URL
+                </label>
+                <Input
+                  id="heroImage"
+                  type="url"
+                  value={settings.heroImage || ''}
+                  onChange={(e) => handleSettingChange('heroImage', e.target.value)}
+                  placeholder="例如: https://example.com/hero.jpg"
+                />
+                <p className="text-gray-500 text-xs mt-1">建议尺寸：1200x800 像素，支持 PNG、JPG 格式</p>
+              </div>
+
+              <div>
+                <label htmlFor="heroImageAlt" className="block text-gray-400 text-sm font-medium mb-2">
+                  Hero 图片描述文字（Alt Text）
+                </label>
+                <Input
+                  id="heroImageAlt"
+                  value={settings.heroImageAlt || ''}
+                  onChange={(e) => handleSettingChange('heroImageAlt', e.target.value)}
+                  placeholder="例如: 电脑学会活动现场"
+                />
+                <p className="text-gray-500 text-xs mt-1">用于图片无法加载时显示和辅助功能</p>
+              </div>
+
+              {/* Hero 图片预览 */}
+              {settings.heroImage && (
+                <div className="p-4 bg-[#1f2d39] rounded-lg border border-[#283946]">
+                  <p className="text-gray-400 text-sm mb-3">Hero 图片预览</p>
+                  <div className="rounded-lg overflow-hidden bg-[#0d1117]">
+                    <img 
+                      src={settings.heroImage} 
+                      alt={settings.heroImageAlt || 'Hero 预览'} 
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <div className="text-sm text-gray-400 mt-2">
+                    <p>在主页顶部 Hero 区域显示</p>
                   </div>
                 </div>
               )}

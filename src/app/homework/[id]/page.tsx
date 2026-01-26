@@ -61,7 +61,59 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [content, setContent] = useState('');
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [newAttachment, setNewAttachment] = useState('');
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to ensure URL has proper protocol
+  const ensureHttpProtocol = (url: string): string => {
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    return `https://${trimmed}`;
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showNotification('文件大小不能超过 10MB', 'error');
+      return;
+    }
+
+    setIsUploadingFile(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.url) {
+        setAttachments([...attachments, data.url]);
+        showNotification('文件上传成功', 'success');
+        // Reset file input
+        e.target.value = '';
+      } else {
+        showNotification(data.error || '文件上传失败', 'error');
+      }
+    } catch (err) {
+      console.error('文件上传失败:', err);
+      showNotification('文件上传失败，请稍后重试', 'error');
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
 
   const fetchHomework = useCallback(async () => {
     try {
@@ -92,6 +144,7 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
         if (submission) {
           setMySubmission(submission);
           setContent(submission.content || '');
+          setAttachments(submission.attachments || []);
         }
       }
     } catch (err) {
@@ -131,7 +184,7 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
           studentName: user.name || ('chineseName' in user ? user.chineseName : ''),
           studentEmail: user.email,
           content,
-          attachments: [],
+          attachments,
         }),
       });
 
@@ -162,6 +215,7 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content,
+          attachments,
         }),
       });
 
@@ -391,14 +445,125 @@ export default function HomeworkDetailPage({ params }: { params: Promise<{ id: s
 
           {/* 提交时间 */}
           {mySubmission && (
-            <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-              提交时间: {formatDate(mySubmission.submittedAt)}
+            <div className="mb-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                提交时间: {formatDate(mySubmission.submittedAt)}
+              </div>
+              {mySubmission.attachments && mySubmission.attachments.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">提交的附件:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {mySubmission.attachments.map((url, index) => (
+                      <a
+                        key={index}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-3 py-1 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-sm">link</span>
+                        附件 {index + 1}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* 内容输入 */}
           {user ? (
             <>
+              {/* 附件/链接上传 */}
+              <div className="mb-4">
+                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+                  附件链接 <span className="text-gray-500">(可选)</span>
+                </label>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={newAttachment}
+                      onChange={(e) => setNewAttachment(e.target.value)}
+                      placeholder="粘贴文件链接 (Google Drive, GitHub, 等)..."
+                      disabled={mySubmission?.status === 'graded' || homework.status === 'closed'}
+                      className="flex-1 bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#13ec80] disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newAttachment.trim()) {
+                          const validUrl = ensureHttpProtocol(newAttachment);
+                          setAttachments([...attachments, validUrl]);
+                          setNewAttachment('');
+                        }
+                      }}
+                      disabled={!newAttachment.trim() || mySubmission?.status === 'graded' || homework.status === 'closed'}
+                      className="px-4 py-2 bg-[#13ec80] text-[#0d1117] rounded-lg hover:bg-[#0fd673] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      添加
+                    </button>
+                  </div>
+
+                  {/* 文件上传按钮 */}
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg">
+                    <span className="material-symbols-outlined text-gray-500">upload_file</span>
+                    <label className="flex-1 cursor-pointer">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {isUploadingFile ? '上传中...' : '或点击上传文件 (最大 10MB)'}
+                      </span>
+                      <input
+                        type="file"
+                        onChange={handleFileUpload}
+                        disabled={mySubmission?.status === 'graded' || homework.status === 'closed' || isUploadingFile}
+                        className="hidden"
+                        accept="*/*"
+                      />
+                    </label>
+                    {isUploadingFile && (
+                      <div className="w-5 h-5 border-2 border-[#13ec80] border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </div>
+                  
+                  {/* 已添加的附件列表 */}
+                  {attachments.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500">已添加 {attachments.length} 个链接：</p>
+                      {attachments.map((attachment, index) => {
+                        const isUploadedFile = attachment.includes('/api/upload/');
+                        const fileName = isUploadedFile ? decodeURIComponent(attachment.split('/').pop() || 'file') : attachment;
+                        return (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-[#0d1117] rounded-lg border border-gray-200 dark:border-[#283946]">
+                            <span className="material-symbols-outlined text-sm text-[#13ec80]">
+                              {isUploadedFile ? 'description' : 'link'}
+                            </span>
+                            <a 
+                              href={attachment} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex-1 text-sm text-[#137fec] hover:underline truncate"
+                              title={attachment}
+                            >
+                              {isUploadedFile ? fileName : attachment}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAttachments(attachments.filter((_, i) => i !== index));
+                              }}
+                              disabled={mySubmission?.status === 'graded' || homework.status === 'closed'}
+                              className="p-1 text-gray-400 hover:text-red-400 hover:bg-gray-100 dark:hover:bg-[#283946] rounded transition-colors disabled:opacity-50"
+                            >
+                              <span className="material-symbols-outlined text-sm">close</span>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}

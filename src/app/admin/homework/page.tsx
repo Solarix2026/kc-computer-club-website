@@ -43,7 +43,20 @@ export default function AdminHomeworkPage() {
     subject: '编程',
     dueDate: '',
     status: 'published',
+    attachments: [] as string[],
   });
+
+  const [newAttachment, setNewAttachment] = useState('');
+
+  // Helper function to ensure URL has proper protocol
+  const ensureHttpProtocol = (url: string): string => {
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    return `https://${trimmed}`;
+  };
 
   // 编辑表单
   const [editFormData, setEditFormData] = useState({
@@ -52,7 +65,10 @@ export default function AdminHomeworkPage() {
     subject: '编程',
     dueDate: '',
     status: 'published',
+    attachments: [] as string[],
   });
+
+  const [editNewAttachment, setEditNewAttachment] = useState('');
 
   const fetchHomework = useCallback(async () => {
     try {
@@ -104,7 +120,9 @@ export default function AdminHomeworkPage() {
           subject: '编程',
           dueDate: '',
           status: 'published',
+          attachments: [],
         });
+        setNewAttachment('');
         fetchHomework();
       } else {
         showNotification(data.error || '发布失败', 'error');
@@ -172,7 +190,9 @@ export default function AdminHomeworkPage() {
       subject: hw.subject,
       dueDate: formattedDate,
       status: hw.status,
+      attachments: hw.attachments || [],
     });
+    setEditNewAttachment('');
     setShowEditModal(true);
   };
 
@@ -315,7 +335,15 @@ export default function AdminHomeworkPage() {
                   <tr key={hw.homeworkId} className="hover:bg-gray-50 dark:hover:bg-[#243442] transition-colors">
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-gray-900 dark:text-white font-medium">{hw.title}</div>
+                        <div className="text-gray-900 dark:text-white font-medium flex items-center gap-2">
+                          {hw.title}
+                          {hw.attachments && hw.attachments.length > 0 && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-[#137fec]/10 text-[#137fec] flex items-center gap-1">
+                              <span className="material-symbols-outlined text-xs">link</span>
+                              {hw.attachments.length}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-gray-500 text-sm truncate max-w-xs">{hw.description}</div>
                       </div>
                     </td>
@@ -446,6 +474,62 @@ export default function AdminHomeworkPage() {
                   />
                 </div>
 
+                {/* 附件/链接 */}
+                <div>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">
+                    附件/参考链接 <span className="text-gray-500">(选填)</span>
+                  </label>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={newAttachment}
+                        onChange={(e) => setNewAttachment(e.target.value)}
+                        placeholder="粘贴文件链接或参考资料 URL..."
+                        className="flex-1 bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newAttachment.trim()) {
+                            const validUrl = ensureHttpProtocol(newAttachment);
+                            setFormData({ ...formData, attachments: [...formData.attachments, validUrl] });
+                            setNewAttachment('');
+                          }
+                        }}
+                        className="px-4 py-2 bg-[#137fec] text-white rounded-lg hover:bg-[#0f5fcc] transition-colors"
+                      >
+                        添加
+                      </button>
+                    </div>
+                    
+                    {/* 已添加的附件列表 */}
+                    {formData.attachments.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500">已添加 {formData.attachments.length} 个链接：</p>
+                        {formData.attachments.map((attachment, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-[#0d1117] rounded-lg border border-gray-200 dark:border-[#283946]">
+                            <span className="material-symbols-outlined text-sm text-[#137fec]">link</span>
+                            <span className="flex-1 text-sm text-gray-900 dark:text-white truncate">{attachment}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  attachments: formData.attachments.filter((_, i) => i !== index)
+                                });
+                              }}
+                              className="p-1 text-gray-400 hover:text-red-400 hover:bg-gray-100 dark:hover:bg-[#283946] rounded transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-sm">close</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* 状态 */}
                 <div>
                   <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">发布状态</label>
@@ -572,6 +656,62 @@ export default function AdminHomeworkPage() {
                     rows={6}
                     className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
                   />
+                </div>
+
+                {/* 附件/链接 */}
+                <div>
+                  <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">
+                    附件/参考链接 <span className="text-gray-500">(选填)</span>
+                  </label>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={editNewAttachment}
+                        onChange={(e) => setEditNewAttachment(e.target.value)}
+                        placeholder="粘贴文件链接或参考资料 URL..."
+                        className="flex-1 bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#283946] rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#137fec]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (editNewAttachment.trim()) {
+                            const validUrl = ensureHttpProtocol(editNewAttachment);
+                            setEditFormData({ ...editFormData, attachments: [...editFormData.attachments, validUrl] });
+                            setEditNewAttachment('');
+                          }
+                        }}
+                        className="px-4 py-2 bg-[#137fec] text-white rounded-lg hover:bg-[#0f5fcc] transition-colors"
+                      >
+                        添加
+                      </button>
+                    </div>
+                    
+                    {/* 已添加的附件列表 */}
+                    {editFormData.attachments.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500">已添加 {editFormData.attachments.length} 个链接：</p>
+                        {editFormData.attachments.map((attachment, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-[#0d1117] rounded-lg border border-gray-200 dark:border-[#283946]">
+                            <span className="material-symbols-outlined text-sm text-[#137fec]">link</span>
+                            <span className="flex-1 text-sm text-gray-900 dark:text-white truncate">{attachment}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditFormData({
+                                  ...editFormData,
+                                  attachments: editFormData.attachments.filter((_, i) => i !== index)
+                                });
+                              }}
+                              className="p-1 text-gray-400 hover:text-red-400 hover:bg-gray-100 dark:hover:bg-[#283946] rounded transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-sm">close</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* 状态 */}
