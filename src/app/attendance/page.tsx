@@ -75,12 +75,24 @@ export default function AttendancePage() {
     fetchConfig();
   }, []);
 
-  // 检查 URL 参数是否有 debug=true
+  // 检查 URL 参数是否有 debug=true，或者按 Ctrl+Shift+D 显示调试按钮
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('debug') === 'true') {
       setShowDebugButton(true);
     }
+    
+    // 添加键盘快捷键 Ctrl+Shift+D 显示调试按钮
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        setShowDebugButton(true);
+        console.log('🐛 调试按钮已启用');
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // 格式化点名时间显示

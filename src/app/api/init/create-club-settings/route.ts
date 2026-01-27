@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
       { key: 'attendanceSession1Start', size: 256 },
       { key: 'attendanceSession2Start', size: 256 },
       { key: 'attendanceWeekStartDate', size: 256 },
+      { key: 'attendanceCode', size: 10 }, // 点名验证码（4位数字）
+      { key: 'attendanceCodeCreatedAt', size: 64 }, // 验证码创建时间（ISO 8601）
     ];
 
     const intAttrs = [
@@ -122,22 +124,25 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建布尔属性
-    try {
-      await (serverDatabases as unknown as {
-        createBooleanAttribute: (
-          dbId: string,
-          collId: string,
-          key: string,
-          required: boolean
-        ) => Promise<unknown>;
-      }).createBooleanAttribute(APPWRITE_DATABASE_ID, COLLECTION_ID, 'attendanceDebugMode', false);
-      console.log(`  ✓ attendanceDebugMode`);
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-      if (!err.message?.includes('already exist')) {
-        console.error(`  ✗ attendanceDebugMode:`, err.message);
-      } else {
-        console.log(`  ✓ attendanceDebugMode (已存在)`);
+    const boolAttrs = ['attendanceDebugMode', 'attendanceCodeEnabled'];
+    for (const key of boolAttrs) {
+      try {
+        await (serverDatabases as unknown as {
+          createBooleanAttribute: (
+            dbId: string,
+            collId: string,
+            key: string,
+            required: boolean
+          ) => Promise<unknown>;
+        }).createBooleanAttribute(APPWRITE_DATABASE_ID, COLLECTION_ID, key, false);
+        console.log(`  ✓ ${key}`);
+      } catch (error: unknown) {
+        const err = error as { message?: string };
+        if (!err.message?.includes('already exist')) {
+          console.error(`  ✗ ${key}:`, err.message);
+        } else {
+          console.log(`  ✓ ${key} (已存在)`);
+        }
       }
     }
 

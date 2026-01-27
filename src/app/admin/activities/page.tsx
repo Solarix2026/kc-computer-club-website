@@ -30,28 +30,14 @@ const statusLabels: Record<string, string> = {
   cancelled: '已取消',
 };
 
-// 模拟活动数据
-const mockActivities: Activity[] = [
-  {
-    $id: '1',
-    id: '1',
-    title: 'Python 数据科学工作坊',
-    startTime: '2025-01-20T19:00:00Z',
-    endTime: '2025-01-20T21:00:00Z',
-    location: '教学楼 301',
-    currentParticipants: 24,
-    maxParticipants: 40,
-    signupDeadline: '2025-01-15T23:59:00Z',
-    status: 'published',
-  },
-];
+// No mock data - fetch from database
 
 export default function AdminActivities() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('全部');
-  const [activities, setActivities] = useState<Activity[]>(mockActivities);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -78,11 +64,11 @@ export default function AdminActivities() {
           }));
           setActivities(formatted);
         } else {
-          setActivities(mockActivities);
+          setActivities([]);
         }
       } catch (err) {
         console.error('加载活动失败:', err);
-        setActivities(mockActivities);
+        setActivities([]);
       } finally {
         setIsLoading(false);
       }

@@ -42,24 +42,8 @@ interface AttendanceConfig {
   weekStartDate: string; // 第1周的开始日期
 }
 
-// 模拟社团设置数据
-const MOCK_SETTINGS: ClubSettings = {
-  aboutTitle: '康中电脑学会',
-  aboutDescription: '我们是一群热爱科技的学生，致力于探索编程、人工智能、网络安全等领域。无论你是编程新手还是技术大神，都欢迎加入我们！',
-  aboutEmail: 'computerclub@school.edu.my',
-  aboutLocation: '电脑室 A304，科学楼三楼',
-  aboutMeetingTime: '每周五 下午 4:00 - 6:00',
-  website: 'https://computerclub.school.edu.my',
-  logoUrl: '',
-  activeMembers: 50,
-  yearlyActivities: 20,
-  awardProjects: 10,
-  partners: 5,
-  githubUrl: 'https://github.com/computerclub',
-  discordUrl: 'https://discord.gg/computerclub',
-  instagramUrl: 'https://instagram.com/computerclub',
-  youtubeUrl: 'https://youtube.com/@computerclub',
-};
+// Default empty settings
+const DEFAULT_SETTINGS: ClubSettings = {};
 
 const DEFAULT_ATTENDANCE_CONFIG: AttendanceConfig = {
   dayOfWeek: 2, // 周二
@@ -72,19 +56,13 @@ const DEFAULT_ATTENDANCE_CONFIG: AttendanceConfig = {
 
 const DAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
-// 存储到 localStorage 和全局状态
-if (typeof window !== 'undefined') {
-  const stored = localStorage.getItem('clubSettings');
-  if (!stored) {
-    localStorage.setItem('clubSettings', JSON.stringify(MOCK_SETTINGS));
-  }
-}
+// No localStorage initialization - fetch from database
 
 export default function AdminSettings() {
   const { user, isAdmin, isLoading } = useAuth();
   const router = useRouter();
 
-  const [settings, setSettings] = useState<ClubSettings>(MOCK_SETTINGS);
+  const [settings, setSettings] = useState<ClubSettings>(DEFAULT_SETTINGS);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'security' | 'api' | 'attendance'>('about');
@@ -199,7 +177,7 @@ export default function AdminSettings() {
       }
     } catch (error) {
       console.error('加载社团设置失败:', error);
-      // 保持使用 MOCK_SETTINGS 作为备份
+      // Keep empty settings if fetch fails
     }
   };
 

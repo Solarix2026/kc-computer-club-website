@@ -340,6 +340,15 @@ export default function AttendanceWidget({
               )}
             </div>
           )}
+          
+          {/* 调试快捷键提示 */}
+          {!showDebugButton && (
+            <div className="pt-4 border-t border-[var(--border)]">
+              <p className="text-xs text-[var(--text-secondary)] text-center">
+                💡 提示：按 <kbd className="px-2 py-1 bg-[var(--surface-hover)] border border-[var(--border)] rounded text-xs font-mono">Ctrl+Shift+D</kbd> 显示调试功能
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

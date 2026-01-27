@@ -191,14 +191,21 @@ export function getCurrentAttendanceSessionWithConfig(config: AttendanceConfig, 
 
   const { session1Start, session1Duration, session2Start, session2Duration } = config;
 
-  // 第一个时段
-  const session1EndMinute = session1Start.minute + session1Duration;
-  if (hours === session1Start.hour && minutes >= session1Start.minute && minutes < session1EndMinute) {
+  // 第一个时段 - 使用绝对分钟数比较，支持跨小时时段
+  const currentTotalMinutes = hours * 60 + minutes;
+  const session1StartMinutes = session1Start.hour * 60 + session1Start.minute;
+  const session1EndMinutes = session1StartMinutes + session1Duration;
+  
+  if (currentTotalMinutes >= session1StartMinutes && currentTotalMinutes < session1EndMinutes) {
     const startTime = new Date(now);
     startTime.setHours(session1Start.hour, session1Start.minute, 0, 0);
+    
     const endTime = new Date(now);
-    endTime.setHours(session1Start.hour, session1EndMinute, 0, 0);
-    const minutesRemaining = session1EndMinute - minutes;
+    const endHour = Math.floor(session1EndMinutes / 60);
+    const endMinute = session1EndMinutes % 60;
+    endTime.setHours(endHour, endMinute, 0, 0);
+    
+    const minutesRemaining = session1EndMinutes - currentTotalMinutes;
     const sessionTimeStr = `${session1Start.hour}:${String(session1Start.minute).padStart(2, '0')}`;
 
     return {
@@ -211,14 +218,20 @@ export function getCurrentAttendanceSessionWithConfig(config: AttendanceConfig, 
     };
   }
 
-  // 第二个时段
-  const session2EndMinute = session2Start.minute + session2Duration;
-  if (hours === session2Start.hour && minutes >= session2Start.minute && minutes < session2EndMinute) {
+  // 第二个时段 - 使用绝对分钟数比较，支持跨小时时段
+  const session2StartMinutes = session2Start.hour * 60 + session2Start.minute;
+  const session2EndMinutes = session2StartMinutes + session2Duration;
+  
+  if (currentTotalMinutes >= session2StartMinutes && currentTotalMinutes < session2EndMinutes) {
     const startTime = new Date(now);
     startTime.setHours(session2Start.hour, session2Start.minute, 0, 0);
+    
     const endTime = new Date(now);
-    endTime.setHours(session2Start.hour, session2EndMinute, 0, 0);
-    const minutesRemaining = session2EndMinute - minutes;
+    const endHour = Math.floor(session2EndMinutes / 60);
+    const endMinute = session2EndMinutes % 60;
+    endTime.setHours(endHour, endMinute, 0, 0);
+    
+    const minutesRemaining = session2EndMinutes - currentTotalMinutes;
     const sessionTimeStr = `${session2Start.hour}:${String(session2Start.minute).padStart(2, '0')}`;
 
     return {

@@ -624,6 +624,24 @@ export default function StudentsPage() {
                           >
                             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
                           </button>
+                          <a
+                            href={`/admin/students/${student.$id}/edit`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              padding: '8px',
+                              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                              color: '#10b981',
+                              border: 'none',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              textDecoration: 'none',
+                            }}
+                            title="编辑"
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                          </a>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteStudent(student.$id); }}
                             style={{
@@ -1039,7 +1057,7 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              <div style={{ padding: '16px 24px', borderTop: '1px solid #2a3c4a', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <div style={{ padding: '16px 24px', borderTop: '1px solid #2a3c4a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button
                   onClick={() => handleDeleteStudent(selectedStudent.$id)}
                   style={{
@@ -1054,20 +1072,41 @@ export default function StudentsPage() {
                 >
                   删除学生
                 </button>
-                <button
-                  onClick={() => { setShowDetailModal(false); setSelectedStudent(null); }}
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: '#137fec',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                  }}
-                >
-                  关闭
-                </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <a
+                    href={`/admin/students/${selectedStudent.$id}/edit`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                    编辑信息
+                  </a>
+                  <button
+                    onClick={() => { setShowDetailModal(false); setSelectedStudent(null); }}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#137fec',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                    }}
+                  >
+                    关闭
+                  </button>
+                </div>
               </div>
             </div>
           </div>

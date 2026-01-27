@@ -26,32 +26,13 @@ interface SessionInfo {
   totalRegistered: number;
 }
 
-// 模拟数据
-const mockSession: SessionInfo = {
-  id: '1',
-  title: '每周编程工作坊',
-  date: '2026-01-10',
-  time: '15:00 - 17:00',
-  location: '创新楼 304 室',
-  totalRegistered: 35,
-};
-
-const mockAttendees: Attendee[] = [
-  { id: '1', name: '张明华', studentId: 'STU2024001', email: 'zhang@school.edu', avatar: '张', status: 'present', checkInTime: '14:55' },
-  { id: '2', name: '李小红', studentId: 'STU2024002', email: 'li@school.edu', avatar: '李', status: 'present', checkInTime: '14:58' },
-  { id: '3', name: '王志强', studentId: 'STU2024003', email: 'wang@school.edu', avatar: '王', status: 'late', checkInTime: '15:12' },
-  { id: '4', name: '陈美玲', studentId: 'STU2024004', email: 'chen@school.edu', avatar: '陈', status: 'pending' },
-  { id: '5', name: '刘伟东', studentId: 'STU2024005', email: 'liu@school.edu', avatar: '刘', status: 'absent' },
-  { id: '6', name: '赵小芳', studentId: 'STU2024006', email: 'zhao@school.edu', avatar: '赵', status: 'present', checkInTime: '14:50' },
-  { id: '7', name: '周大伟', studentId: 'STU2024007', email: 'zhou@school.edu', avatar: '周', status: 'pending' },
-  { id: '8', name: '吴晓明', studentId: 'STU2024008', email: 'wu@school.edu', avatar: '吴', status: 'present', checkInTime: '14:52' },
-];
+// No mock data - this page should use real attendance API
 
 export default function TakeAttendancePage() {
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const params = useParams();
-  const [session/* , setSession */] = useState<SessionInfo>(mockSession);
-  const [attendees, setAttendees] = useState<Attendee[]>(mockAttendees);
+  const [session/* , setSession */] = useState<SessionInfo | null>(null);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [filter, setFilter] = useState<'all' | 'present' | 'absent' | 'late' | 'pending'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [editingNotes, setEditingNotes] = useState<{ attendeeId: string; notes: string } | null>(null);

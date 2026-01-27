@@ -34,7 +34,7 @@ function generateAttendanceCode(): string {
 /**
  * 从数据库获取点名配置（包括验证码）
  */
-async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; debugMode: boolean; attendanceCode: string | null; codeEnabled: boolean }> {
+async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; debugMode: boolean; attendanceCode: string | null; codeEnabled: boolean; codeCreatedAt: string | null }> {
   try {
     const doc = await serverDatabases.getDocument(
       APPWRITE_DATABASE_ID,
@@ -55,11 +55,31 @@ async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; 
       weekStartDate: doc.attendanceWeekStartDate ?? DEFAULT_CONFIG.weekStartDate,
     };
 
+    let attendanceCode = doc.attendanceCode ?? null;
+    let codeCreatedAt = doc.attendanceCodeCreatedAt ?? null;
+    const codeEnabled = doc.attendanceCodeEnabled ?? false;
+
+    // 检查验证码是否超过10分钟，如果是则自动刷新
+    if (attendanceCode && codeCreatedAt && codeEnabled) {
+      const createdTime = new Date(codeCreatedAt);
+      const now = new Date();
+      const minutesElapsed = (now.getTime() - createdTime.getTime()) / (1000 * 60);
+
+      if (minutesElapsed >= 10) {
+        console.log('[AttendanceAPI] 验证码已超过10分钟，自动刷新');
+        attendanceCode = generateAttendanceCode();
+        codeCreatedAt = now.toISOString();
+        // 保存新验证码
+        await saveAttendanceConfigToDB({}, undefined, attendanceCode, codeEnabled, codeCreatedAt);
+      }
+    }
+
     return {
       config,
       debugMode: doc.attendanceDebugMode ?? false,
-      attendanceCode: doc.attendanceCode ?? null,
-      codeEnabled: doc.attendanceCodeEnabled ?? false,
+      attendanceCode,
+      codeEnabled,
+      codeCreatedAt,
     };
   } catch (error: unknown) {
     const err = error as { code?: number };
@@ -68,7 +88,7 @@ async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; 
     } else {
       console.error('[AttendanceAPI] 获取配置失败:', error);
     }
-    return { config: DEFAULT_CONFIG, debugMode: false, attendanceCode: null, codeEnabled: false };
+    return { config: DEFAULT_CONFIG, debugMode: false, attendanceCode: null, codeEnabled: false, codeCreatedAt: null };
   }
 }
 
@@ -79,7 +99,8 @@ async function saveAttendanceConfigToDB(
   config: Partial<AttendanceConfig>, 
   debugMode?: boolean,
   attendanceCode?: string | null,
-  codeEnabled?: boolean
+  codeEnabled?: boolean,
+  codeCreatedAt?: string | null
 ): Promise<void> {
   const updateData: Record<string, unknown> = {};
   
@@ -109,6 +130,9 @@ async function saveAttendanceConfigToDB(
   }
   if (codeEnabled !== undefined) {
     updateData.attendanceCodeEnabled = codeEnabled;
+  }
+  if (codeCreatedAt !== undefined) {
+    updateData.attendanceCodeCreatedAt = codeCreatedAt;
   }
 
   try {
@@ -153,15 +177,26 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     // 从数据库获取配置
-    const { config, debugMode, attendanceCode, codeEnabled } = await getAttendanceConfigFromDB();
+    const { config, debugMode, attendanceCode, codeEnabled, codeCreatedAt } = await getAttendanceConfigFromDB();
 
     // 获取调试模式状态
     if (action === 'debug-status') {
+      // 计算验证码剩余时间
+      let codeExpiresIn = null;
+      if (attendanceCode && codeCreatedAt && codeEnabled) {
+        const createdTime = new Date(codeCreatedAt);
+        const now = new Date();
+        const minutesElapsed = (now.getTime() - createdTime.getTime()) / (1000 * 60);
+        codeExpiresIn = Math.max(0, 10 - minutesElapsed); // 剩余分钟数
+      }
+
       return NextResponse.json({
         debugMode,
         config,
         attendanceCode,
         codeEnabled,
+        codeCreatedAt,
+        codeExpiresIn,
       });
     }
 
@@ -179,6 +214,7 @@ export async function GET(request: NextRequest) {
         config,
         codeEnabled,
         hasCode: !!attendanceCode,
+        codeCreatedAt,
       });
     }
 
@@ -193,6 +229,7 @@ export async function GET(request: NextRequest) {
       config,
       codeEnabled,
       hasCode: !!attendanceCode,
+      codeCreatedAt,
     });
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
@@ -243,7 +280,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // 从数据库获取当前配置
-    const { config: currentConfig, debugMode: currentDebugMode, attendanceCode: currentCode, codeEnabled: currentCodeEnabled } = await getAttendanceConfigFromDB();
+    const { config: currentConfig, debugMode: currentDebugMode, attendanceCode: currentCode, codeEnabled: currentCodeEnabled, codeCreatedAt: currentCodeCreatedAt } = await getAttendanceConfigFromDB();
 
     // 切换调试模式
     if (body.action === 'toggle-debug') {
@@ -269,33 +306,37 @@ export async function POST(request: NextRequest) {
     // 生成新验证码
     if (body.action === 'generate-code') {
       const newCode = generateAttendanceCode();
-      await saveAttendanceConfigToDB({}, undefined, newCode, true);
+      const now = new Date().toISOString();
+      await saveAttendanceConfigToDB({}, undefined, newCode, true, now);
       return NextResponse.json({
         success: true,
         attendanceCode: newCode,
         codeEnabled: true,
-        message: `验证码已生成: ${newCode}`,
+        codeCreatedAt: now,
+        message: `验证码已生成: ${newCode}（10分钟有效）`,
       });
     }
 
     // 切换验证码开关
     if (body.action === 'toggle-code') {
-      await saveAttendanceConfigToDB({}, undefined, body.enabled ? currentCode : null, body.enabled);
+      await saveAttendanceConfigToDB({}, undefined, body.enabled ? currentCode : null, body.enabled, body.enabled ? currentCodeCreatedAt : null);
       return NextResponse.json({
         success: true,
         codeEnabled: body.enabled,
         attendanceCode: body.enabled ? currentCode : null,
+        codeCreatedAt: body.enabled ? currentCodeCreatedAt : null,
         message: body.enabled ? '验证码功能已开启' : '验证码功能已关闭',
       });
     }
 
     // 清除验证码
     if (body.action === 'clear-code') {
-      await saveAttendanceConfigToDB({}, undefined, null, false);
+      await saveAttendanceConfigToDB({}, undefined, null, false, null);
       return NextResponse.json({
         success: true,
         codeEnabled: false,
         attendanceCode: null,
+        codeCreatedAt: null,
         message: '验证码已清除',
       });
     }

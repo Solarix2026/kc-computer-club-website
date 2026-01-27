@@ -23,41 +23,7 @@ interface Activity {
   description?: string;
 }
 
-// 模拟报名数据
-const mockSignups: Signup[] = [
-  {
-    id: '1',
-    name: '张三',
-    email: 'zhangsan@example.com',
-    phone: '13800138000',
-    signedUpAt: '2025-01-18',
-    status: 'registered',
-  },
-  {
-    id: '2',
-    name: '李四',
-    email: 'lisi@example.com',
-    phone: '13900139000',
-    signedUpAt: '2025-01-19',
-    status: 'registered',
-  },
-  {
-    id: '3',
-    name: '王五',
-    email: 'wangwu@example.com',
-    phone: '13700137000',
-    signedUpAt: '2025-01-10',
-    status: 'attended',
-  },
-  {
-    id: '4',
-    name: '赵六',
-    email: 'zhaoliu@example.com',
-    phone: '13600136000',
-    signedUpAt: '2025-01-15',
-    status: 'cancelled',
-  },
-];
+// No mock data - fetch from database
 
 const statusLabels: Record<string, string> = {
   attended: '已参加',
@@ -82,7 +48,7 @@ export default function ActivitySignups() {
   
   const activityId = params.id as string;
   const [activity, setActivity] = useState<Activity | null>(null);
-  const [signups, setSignups] = useState<Signup[]>(mockSignups);
+  const [signups, setSignups] = useState<Signup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSignups, setSelectedSignups] = useState<Set<string>>(new Set());
 
