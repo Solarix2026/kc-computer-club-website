@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { NextRequest, NextResponse } from 'next/server';
-import { Client, Databases, Query } from 'node-appwrite';
+import { serverDatabases, Query } from '@/services/appwrite-server';
 
 /**
  * GET /api/attendance/records
@@ -24,53 +24,49 @@ export async function GET(request: NextRequest) {
     // sessionTime 验证将在获取配置后进行
     const requestedSessionTime = sessionTime;
 
-    // 使用服务器端 Appwrite 客户端（带 API 密钥）
-    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
-    const apiKey = process.env.APPWRITE_API_KEY;
+    // 使用统一的服务器端 Appwrite 客户端
+    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
     const usersCollectionId = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION || 'users';
 
-    if (!endpoint || !projectId || !databaseId || !apiKey) {
+    if (!databaseId) {
       return NextResponse.json(
         { error: '服务器配置不完整' },
         { status: 500 }
       );
     }
 
-    const client = new Client()
-      .setEndpoint(endpoint)
-      .setProject(projectId)
-      .setKey(apiKey);
-
-    const databases = new Databases(client);
     const ATTENDANCE_COLLECTION_ID = 'attendance';
     const CLUB_SETTINGS_COLLECTION_ID = 'clubSettings';
+    const ATTENDANCE_CONFIG_DOC_ID = 'attendance_config';
 
     // 默认时段配置
     let session1Time = '15:20';
     let session2Time = '16:35';
+    let configError: string | null = null;
 
     // 从数据库获取实际时段配置
     try {
-      const settingsResponse = await databases.listDocuments(
+      const settingsDoc = await serverDatabases.getDocument(
         databaseId,
         CLUB_SETTINGS_COLLECTION_ID,
-        [Query.limit(1)]
+        ATTENDANCE_CONFIG_DOC_ID
       );
-      if (settingsResponse.documents.length > 0) {
-        const settings = settingsResponse.documents[0];
-        if (settings.attendanceSession1Start) {
-          const s1 = JSON.parse(String(settings.attendanceSession1Start));
-          session1Time = `${s1.hour}:${String(s1.minute).padStart(2, '0')}`;
-        }
-        if (settings.attendanceSession2Start) {
-          const s2 = JSON.parse(String(settings.attendanceSession2Start));
-          session2Time = `${s2.hour}:${String(s2.minute).padStart(2, '0')}`;
-        }
+      
+      console.log('[RECORDS] 读取到配置文档');
+      if (settingsDoc.attendanceSession1Start) {
+        const s1 = JSON.parse(String(settingsDoc.attendanceSession1Start));
+        session1Time = `${s1.hour}:${String(s1.minute).padStart(2, '0')}`;
+        console.log('[RECORDS] session1Time from config:', session1Time);
+      }
+      if (settingsDoc.attendanceSession2Start) {
+        const s2 = JSON.parse(String(settingsDoc.attendanceSession2Start));
+        session2Time = `${s2.hour}:${String(s2.minute).padStart(2, '0')}`;
+        console.log('[RECORDS] session2Time from config:', session2Time);
       }
     } catch (err) {
-      console.warn('获取时段配置失败，使用默认值:', err);
+      const error = err as Error;
+      configError = error.message || String(err);
+      console.warn('[RECORDS] 获取时段配置失败，使用默认值:', configError);
     }
 
     // 从邮箱提取学号（与学生端保持一致）
@@ -83,7 +79,7 @@ export async function GET(request: NextRequest) {
     let allStudents: Array<{ $id: string; studentId: string; studentName: string; studentEmail: string }> = [];
     if (includeAll) {
       try {
-        const usersResponse = await databases.listDocuments(
+        const usersResponse = await serverDatabases.listDocuments(
           databaseId,
           usersCollectionId,
           [Query.equal('role', 'student'), Query.limit(500)]
@@ -113,7 +109,7 @@ export async function GET(request: NextRequest) {
         queries.push(Query.equal('weekNumber', weekNumber));
       }
 
-      const response = await databases.listDocuments(
+      const response = await serverDatabases.listDocuments(
         databaseId,
         ATTENDANCE_COLLECTION_ID,
         queries as unknown as string[]
@@ -179,8 +175,8 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // 获取整周统计
-      const queries = [Query.equal('weekNumber', weekNumber)];
-      const response = await databases.listDocuments(
+      const queries = [Query.equal('weekNumber', weekNumber), Query.limit(500)];
+      const response = await serverDatabases.listDocuments(
         databaseId,
         ATTENDANCE_COLLECTION_ID,
         queries as unknown as string[]
@@ -188,14 +184,30 @@ export async function GET(request: NextRequest) {
 
       const records = response.documents;
       
+      console.log('[RECORDS] ==== 详细调试信息 ====');
       console.log('[RECORDS] 获取到记录数:', records.length);
       console.log('[RECORDS] session1Time:', session1Time, 'session2Time:', session2Time);
       if (records.length > 0) {
+        const sampleRecord = records[0];
         console.log('[RECORDS] 示例记录:', {
-          $id: records[0].$id,
-          sessionTime: records[0].sessionTime,
-          status: records[0].status,
+          $id: sampleRecord.$id,
+          sessionTime: sampleRecord.sessionTime,
+          status: sampleRecord.status,
+          uniqueKey: sampleRecord.uniqueKey,
         });
+      }
+      
+      // 查找任何 present 状态的记录
+      const presentRecords = records.filter((r: Record<string, unknown>) => r.status === 'present');
+      console.log('[RECORDS] present 状态记录数:', presentRecords.length);
+      if (presentRecords.length > 0) {
+        console.log('[RECORDS] present 记录详情:', presentRecords.map((r: Record<string, unknown>) => ({
+          $id: r.$id,
+          studentId: r.studentId,
+          sessionTime: r.sessionTime,
+          uniqueKey: r.uniqueKey,
+          status: r.status,
+        })));
       }
       
       // 分组统计（使用从配置获取的 sessionTime，支持多种格式）
@@ -203,20 +215,97 @@ export async function GET(request: NextRequest) {
       const isSession1 = (r: Record<string, unknown>): boolean => {
         const st = String(r.sessionTime || '');
         const uk = String(r.uniqueKey || r.$id || '');
-        // 检查 sessionTime 是否匹配 session1Time，或 uniqueKey 包含 _1_
-        return st === session1Time || st.replace(/-/g, ':') === session1Time || 
-               uk.includes('_1_') || st === 'session1';
+        // 优先使用 uniqueKey 中的 sessionNumber (_1_ 表示 session1)
+        if (uk.includes('_1_')) {
+          return true;
+        }
+        // 检查 sessionTime 是否匹配 session1Time
+        if (st === session1Time || st.replace(/-/g, ':') === session1Time || st === 'session1') {
+          return true;
+        }
+        // 检查是否在 session1 时间范围内（如果配置改变，旧记录仍能匹配）
+        // 容差：配置时间前后30分钟内的记录都算 session1
+        const stMatch = st.match(/^(\d+):(\d+)$/);
+        if (stMatch) {
+          const recordHour = parseInt(stMatch[1]);
+          const recordMinute = parseInt(stMatch[2]);
+          const s1Match = session1Time.match(/^(\d+):(\d+)$/);
+          if (s1Match) {
+            const configHour = parseInt(s1Match[1]);
+            const configMinute = parseInt(s1Match[2]);
+            const recordMinutes = recordHour * 60 + recordMinute;
+            const configMinutes = configHour * 60 + configMinute;
+            // 前后30分钟容差
+            if (Math.abs(recordMinutes - configMinutes) <= 30) {
+              return true;
+            }
+          }
+        }
+        return false;
       };
       
       const isSession2 = (r: Record<string, unknown>): boolean => {
         const st = String(r.sessionTime || '');
         const uk = String(r.uniqueKey || r.$id || '');
-        return st === session2Time || st.replace(/-/g, ':') === session2Time || 
-               uk.includes('_2_') || st === 'session2';
+        const studentId = String(r.studentId || '');
+        
+        // 调试：打印 present 状态记录的匹配过程
+        if (r.status === 'present') {
+          console.log('[RECORDS] 检查 present 记录是否为 session2:', {
+            studentId,
+            uk,
+            st,
+            'uk.includes(_2_)': uk.includes('_2_'),
+            'st === session2Time': st === session2Time,
+          });
+        }
+        
+        // 优先使用 uniqueKey 中的 sessionNumber (_2_ 表示 session2)
+        if (uk.includes('_2_')) {
+          if (r.status === 'present') {
+            console.log('[RECORDS] present 记录匹配 session2 (通过 uniqueKey)');
+          }
+          return true;
+        }
+        // 检查 sessionTime 是否匹配 session2Time
+        if (st === session2Time || st.replace(/-/g, ':') === session2Time || st === 'session2') {
+          return true;
+        }
+        // 检查是否在 session2 时间范围内（如果配置改变，旧记录仍能匹配）
+        // 容差：配置时间前后30分钟内的记录都算 session2
+        const stMatch = st.match(/^(\d+):(\d+)$/);
+        if (stMatch) {
+          const recordHour = parseInt(stMatch[1]);
+          const recordMinute = parseInt(stMatch[2]);
+          const s2Match = session2Time.match(/^(\d+):(\d+)$/);
+          if (s2Match) {
+            const configHour = parseInt(s2Match[1]);
+            const configMinute = parseInt(s2Match[2]);
+            const recordMinutes = recordHour * 60 + recordMinute;
+            const configMinutes = configHour * 60 + configMinute;
+            // 前后30分钟容差
+            if (Math.abs(recordMinutes - configMinutes) <= 30) {
+              if (r.status === 'present') {
+                console.log('[RECORDS] present 记录匹配 session2 (通过时间容差)');
+              }
+              return true;
+            }
+          }
+        }
+        return false;
       };
       
       const session1Records = records.filter((r: Record<string, unknown>) => isSession1(r));
       const session2Records = records.filter((r: Record<string, unknown>) => isSession2(r));
+
+      console.log('[RECORDS] 过滤结果 - session1:', session1Records.length, 'session2:', session2Records.length);
+      if (session1Records.length > 0) {
+        console.log('[RECORDS] session1 示例:', { sessionTime: session1Records[0].sessionTime, uniqueKey: session1Records[0].uniqueKey });
+      }
+      if (session2Records.length > 0) {
+        console.log('[RECORDS] session2 示例:', { sessionTime: session2Records[0].sessionTime, uniqueKey: session2Records[0].uniqueKey });
+      }
+
 
       // 添加未点名的学生到每个时段（仅返回，不写入数据库）
       // 注意：不自动创建记录，避免刷新时重复创建
@@ -287,6 +376,21 @@ export async function GET(request: NextRequest) {
           total: session2.length,
           ...getStatusCounts(session2),
           students: sortByStatus(session2),
+        },
+        _debug: {
+          configuredSession1Time: session1Time,
+          configuredSession2Time: session2Time,
+          configError: configError,
+          rawRecordsCount: records.length,
+          presentRecordsCount: presentRecords.length,
+          session1RecordsCount: session1Records.length,
+          session2RecordsCount: session2Records.length,
+          presentRecordDetails: presentRecords.length > 0 ? {
+            studentId: presentRecords[0].studentId,
+            sessionTime: presentRecords[0].sessionTime,
+            status: presentRecords[0].status,
+            uniqueKey: presentRecords[0].uniqueKey,
+          } : null,
         },
       };
 

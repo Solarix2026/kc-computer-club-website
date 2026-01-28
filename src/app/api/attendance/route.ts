@@ -55,24 +55,11 @@ async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; 
       weekStartDate: doc.attendanceWeekStartDate ?? DEFAULT_CONFIG.weekStartDate,
     };
 
-    let attendanceCode = doc.attendanceCode ?? null;
-    let codeCreatedAt = doc.attendanceCodeCreatedAt ?? null;
+    const attendanceCode = doc.attendanceCode ?? null;
+    const codeCreatedAt = doc.attendanceCodeCreatedAt ?? null;
     const codeEnabled = doc.attendanceCodeEnabled ?? false;
 
-    // 检查验证码是否超过10分钟，如果是则自动刷新
-    if (attendanceCode && codeCreatedAt && codeEnabled) {
-      const createdTime = new Date(codeCreatedAt);
-      const now = new Date();
-      const minutesElapsed = (now.getTime() - createdTime.getTime()) / (1000 * 60);
-
-      if (minutesElapsed >= 10) {
-        console.log('[AttendanceAPI] 验证码已超过10分钟，自动刷新');
-        attendanceCode = generateAttendanceCode();
-        codeCreatedAt = now.toISOString();
-        // 保存新验证码
-        await saveAttendanceConfigToDB({}, undefined, attendanceCode, codeEnabled, codeCreatedAt);
-      }
-    }
+    // 验证码不会自动刷新，需要管理员手动重新生成
 
     return {
       config,
@@ -313,7 +300,7 @@ export async function POST(request: NextRequest) {
         attendanceCode: newCode,
         codeEnabled: true,
         codeCreatedAt: now,
-        message: `验证码已生成: ${newCode}（10分钟有效）`,
+        message: `验证码已生成: ${newCode}`,
       });
     }
 
