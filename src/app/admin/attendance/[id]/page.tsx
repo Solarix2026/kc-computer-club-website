@@ -110,6 +110,16 @@ export default function TakeAttendancePage() {
     setEditingNotes(null);
   };
 
+  if (!session) {
+    return (
+      <AdminLayout>
+        <div className="p-6 lg:p-8">
+          <div className="text-[#8ba9c8] text-sm">正在加载点名信息...</div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="p-6 lg:p-8">
@@ -123,19 +133,19 @@ export default function TakeAttendancePage() {
               <span className="material-symbols-outlined text-[#8ba9c8]">arrow_back</span>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-white">{session.title}</h1>
+              <h1 className="text-2xl font-bold text-white">{session?.title || '考勤管理'}</h1>
               <div className="flex items-center gap-4 text-sm text-[#8ba9c8] mt-1">
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-lg">calendar_today</span>
-                  {session.date}
+                  {session?.date || '-'}
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-lg">schedule</span>
-                  {session.time}
+                  {session?.time || '-'}
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-lg">location_on</span>
-                  {session.location}
+                  {session?.location || '-'}
                 </span>
               </div>
             </div>

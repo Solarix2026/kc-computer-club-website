@@ -101,11 +101,11 @@ export default function ActivitySignups() {
         });
         setSignups(formatted);
       } else {
-        setSignups(mockSignups);
+        setSignups([]);
       }
     } catch (err) {
       console.error('加载数据失败:', err);
-      setSignups(mockSignups);
+      setSignups([]);
     } finally {
       setIsLoading(false);
     }
