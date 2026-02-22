@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { StudentLayout } from '@/components/layout/StudentLayout';
 import { HeroSection } from '@/components/sections/HeroSection';
 import { NoticesSection, EventsSection } from '@/components/sections/NoticesSection';
-import { ActiveProjectsSection } from '@/components/sections/ActiveProjectsSection';
 import AttendanceWidget from '@/components/attendance/AttendanceWidget';
 
 // 默认数据结构
@@ -297,9 +296,6 @@ export default function HomePage() {
           {/* 活动区域 - 占 1 列 */}
           <EventsSection activities={activities} />
         </section>
-
-        {/* 活跃项目部分 */}
-        <ActiveProjectsSection />
       </main>
     </StudentLayout>
   );
