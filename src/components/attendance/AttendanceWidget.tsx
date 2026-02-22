@@ -201,19 +201,11 @@ export default function AttendanceWidget({
           {status.isAttendanceOpen ? (
             <>
               {/* 点名开放时的信息 */}
-              <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-2xl">schedule</span>
-                  <div>
-                    <p className="text-[var(--foreground)] font-bold text-lg">{status.session?.sessionTime}</p>
-                    <p className="text-[var(--text-secondary)] text-sm">当前点名时段</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-amber-400 font-bold text-lg animate-pulse">
-                    {status.session?.minutesRemaining} 分钟
-                  </p>
-                  <p className="text-[var(--text-secondary)] text-sm">剩余时间</p>
+              <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-3">
+                <span className="material-symbols-outlined text-primary text-2xl">today</span>
+                <div>
+                  <p className="text-[var(--foreground)] font-bold">今天是点名日</p>
+                  <p className="text-[var(--text-secondary)] text-sm">请输入老师公布的验证码完成签到</p>
                 </div>
               </div>
 
@@ -233,7 +225,7 @@ export default function AttendanceWidget({
                     className="w-full px-4 py-3 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-[var(--foreground)] text-center text-2xl font-mono tracking-widest placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-amber-500/50"
                   />
                   <p className="text-[var(--text-secondary)] text-xs mt-2 text-center">
-                    请向在场的管理员获取验证码
+                    时段1 和 时段2 各有不同验证码，请向在场老师获取
                   </p>
                 </div>
               )}
@@ -271,35 +263,15 @@ export default function AttendanceWidget({
               </button>
             </>
           ) : (
-            /* 非点名时间 */
+            /* 非点名日 */
             <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-5 text-center">
-              <span className="material-symbols-outlined text-[var(--text-secondary)] text-4xl mb-3">schedule</span>
-              <p className="text-[var(--foreground)] font-medium mb-2">当前不在点名时间</p>
+              <span className="material-symbols-outlined text-[var(--text-secondary)] text-4xl mb-3">event_busy</span>
+              <p className="text-[var(--foreground)] font-medium mb-2">今天不是点名日</p>
               <div className="text-[var(--text-secondary)] text-sm space-y-1">
                 {status.config ? (
-                  <>
-                    <p>点名时间：{['周日', '周一', '周二', '周三', '周四', '周五', '周六'][status.config.dayOfWeek]}</p>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined text-primary text-sm">location_on</span>
-                      <span>
-                        {String(status.config.session1Start.hour).padStart(2, '0')}:
-                        {String(status.config.session1Start.minute).padStart(2, '0')}-
-                        {String(status.config.session1Start.hour + Math.floor((status.config.session1Start.minute + status.config.session1Duration) / 60)).padStart(2, '0')}:
-                        {String((status.config.session1Start.minute + status.config.session1Duration) % 60).padStart(2, '0')}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined text-primary text-sm">location_on</span>
-                      <span>
-                        {String(status.config.session2Start.hour).padStart(2, '0')}:
-                        {String(status.config.session2Start.minute).padStart(2, '0')}-
-                        {String(status.config.session2Start.hour + Math.floor((status.config.session2Start.minute + status.config.session2Duration) / 60)).padStart(2, '0')}:
-                        {String((status.config.session2Start.minute + status.config.session2Duration) % 60).padStart(2, '0')}
-                      </span>
-                    </div>
-                  </>
+                  <p>点名日：每{['周日', '周一', '周二', '周三', '周四', '周五', '周六'][status.config.dayOfWeek]}</p>
                 ) : (
-                  <p>加载点名时间中...</p>
+                  <p>加载点名配置中...</p>
                 )}
               </div>
             </div>

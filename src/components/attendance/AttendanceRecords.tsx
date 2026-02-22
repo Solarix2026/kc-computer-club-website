@@ -68,12 +68,11 @@ export default function AttendanceRecords() {
   const [isLoadingStudent, setIsLoadingStudent] = useState(false);
   
   // 验证码相关状态
-  const [attendanceCode, setAttendanceCode] = useState<string | null>(null);
+  const [attendanceCode1, setAttendanceCode1] = useState<string | null>(null);
+  const [attendanceCode2, setAttendanceCode2] = useState<string | null>(null);
   const [codeEnabled, setCodeEnabled] = useState(false);
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
-  const [codeCreatedAt, setCodeCreatedAt] = useState<string | null>(null);
-  const [codeExpiresIn, setCodeExpiresIn] = useState<number | null>(null);
   
   // 标记迟到相关状态
   const [isMarkingLate, setIsMarkingLate] = useState(false);
@@ -101,29 +100,6 @@ export default function AttendanceRecords() {
     session2Duration: 5,
   });
   
-  // 计算验证码剩余时间
-  const calculateCodeExpiresIn = (createdAt: string | null): number | null => {
-    if (!createdAt) return null;
-    const created = new Date(createdAt);
-    const now = new Date();
-    const minutes = (now.getTime() - created.getTime()) / (1000 * 60);
-    return Math.max(0, 10 - minutes);
-  };
-
-  // 更新验证码倒计时（仅显示，不会自动刷新验证码）
-  useEffect(() => {
-    if (codeCreatedAt && codeEnabled) {
-      const interval = setInterval(() => {
-        const remaining = calculateCodeExpiresIn(codeCreatedAt);
-        setCodeExpiresIn(remaining);
-        
-        // 验证码过期后不会自动刷新，需要管理员手动重新生成
-      }, 1000); // 每秒更新
-      
-      return () => clearInterval(interval);
-    }
-  }, [codeCreatedAt, codeEnabled]);
-
   // 计算结束时间（处理分钟溢出）
   const calculateEndTime = (hour: number, minute: number, duration: number): { hour: number; minute: number } => {
     const totalMinutes = minute + duration;
@@ -315,10 +291,9 @@ export default function AttendanceRecords() {
     const response = fetch('/api/attendance?action=debug-status');
     response.then((res) => res.json()).then((data) => {
       setWeekNumber(data.config?.weekNumber || 1);
-      setAttendanceCode(data.attendanceCode || null);
+      setAttendanceCode1(data.attendanceCode1 || null);
+      setAttendanceCode2(data.attendanceCode2 || null);
       setCodeEnabled(data.codeEnabled || false);
-      setCodeCreatedAt(data.codeCreatedAt || null);
-      setCodeExpiresIn(data.codeExpiresIn || null);
       
       // 加载点名配置（时段时间从数据库获取）
       const initialConfig: SessionConfig = {
@@ -382,7 +357,7 @@ export default function AttendanceRecords() {
     };
   }, []);
 
-  // 生成新验证码
+  // 手动生成两个新验证码
   const handleGenerateCode = async () => {
     setIsGeneratingCode(true);
     try {
@@ -393,10 +368,9 @@ export default function AttendanceRecords() {
       });
       const data = await response.json();
       if (data.success) {
-        setAttendanceCode(data.attendanceCode);
+        setAttendanceCode1(data.attendanceCode1);
+        setAttendanceCode2(data.attendanceCode2);
         setCodeEnabled(true);
-        setCodeCreatedAt(data.codeCreatedAt);
-        setCodeExpiresIn(10); // 10分钟有效
         alert(data.message || '验证码生成成功');
       } else {
         alert('生成验证码失败');
@@ -418,10 +392,9 @@ export default function AttendanceRecords() {
       });
       const data = await response.json();
       if (data.success) {
-        setAttendanceCode(null);
+        setAttendanceCode1(null);
+        setAttendanceCode2(null);
         setCodeEnabled(false);
-        setCodeCreatedAt(null);
-        setCodeExpiresIn(null);
         alert('验证码已清除');
       }
     } catch (err) {
@@ -740,29 +713,27 @@ export default function AttendanceRecords() {
           </div>
           
           <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-            {codeEnabled && attendanceCode && (
+            {codeEnabled && (attendanceCode1 || attendanceCode2) && (
               <div style={{
                 background: 'rgba(19, 127, 236, 0.15)',
                 border: '2px solid rgba(19, 127, 236, 0.5)',
                 borderRadius: '12px',
-                padding: '12px 24px',
-                textAlign: 'center',
+                padding: '12px 20px',
+                display: 'flex',
+                gap: '24px',
               }}>
-                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px'}}>
-                  <div style={{color: '#8a9e94', fontSize: '11px'}}>当前验证码</div>
-                  {codeExpiresIn !== null && codeCreatedAt && (
-                    <div style={{
-                      fontSize: '11px',
-                      color: '#8a9e94',
-                      fontWeight: 600,
-                      marginLeft: '12px',
-                    }}>
-                      已生成 {Math.floor(10 - codeExpiresIn)}分{Math.floor(((10 - codeExpiresIn) % 1) * 60)}秒
-                    </div>
-                  )}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#8a9e94', fontSize: '11px', marginBottom: '4px' }}>时段 1 验证码</div>
+                  <div style={{ color: '#137fec', fontSize: '28px', fontWeight: 'bold', fontFamily: 'monospace', letterSpacing: '6px' }}>
+                    {attendanceCode1 || '----'}
+                  </div>
                 </div>
-                <div style={{color: '#137fec', fontSize: '32px', fontWeight: 'bold', fontFamily: 'monospace', letterSpacing: '8px'}}>
-                  {attendanceCode}
+                <div style={{ width: '1px', background: 'rgba(19, 127, 236, 0.3)' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#8a9e94', fontSize: '11px', marginBottom: '4px' }}>时段 2 验证码</div>
+                  <div style={{ color: '#13ec80', fontSize: '28px', fontWeight: 'bold', fontFamily: 'monospace', letterSpacing: '6px' }}>
+                    {attendanceCode2 || '----'}
+                  </div>
                 </div>
               </div>
             )}

@@ -34,7 +34,7 @@ function generateAttendanceCode(): string {
 /**
  * 从数据库获取点名配置（包括验证码）
  */
-async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; debugMode: boolean; attendanceCode: string | null; codeEnabled: boolean; codeCreatedAt: string | null }> {
+async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; debugMode: boolean; attendanceCode1: string | null; attendanceCode2: string | null; attendanceCodesWeek: number | null; codeEnabled: boolean }> {
   try {
     const doc = await serverDatabases.getDocument(
       APPWRITE_DATABASE_ID,
@@ -55,18 +55,13 @@ async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; 
       weekStartDate: doc.attendanceWeekStartDate ?? DEFAULT_CONFIG.weekStartDate,
     };
 
-    const attendanceCode = doc.attendanceCode ?? null;
-    const codeCreatedAt = doc.attendanceCodeCreatedAt ?? null;
-    const codeEnabled = doc.attendanceCodeEnabled ?? false;
-
-    // 验证码不会自动刷新，需要管理员手动重新生成
-
     return {
       config,
       debugMode: doc.attendanceDebugMode ?? false,
-      attendanceCode,
-      codeEnabled,
-      codeCreatedAt,
+      attendanceCode1: doc.attendanceCode1 ?? null,
+      attendanceCode2: doc.attendanceCode2 ?? null,
+      attendanceCodesWeek: typeof doc.attendanceCodesWeek === 'number' ? doc.attendanceCodesWeek : null,
+      codeEnabled: doc.attendanceCodeEnabled ?? false,
     };
   } catch (error: unknown) {
     const err = error as { code?: number };
@@ -75,7 +70,7 @@ async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; 
     } else {
       console.error('[AttendanceAPI] 获取配置失败:', error);
     }
-    return { config: DEFAULT_CONFIG, debugMode: false, attendanceCode: null, codeEnabled: false, codeCreatedAt: null };
+    return { config: DEFAULT_CONFIG, debugMode: false, attendanceCode1: null, attendanceCode2: null, attendanceCodesWeek: null, codeEnabled: false };
   }
 }
 
@@ -85,42 +80,24 @@ async function getAttendanceConfigFromDB(): Promise<{ config: AttendanceConfig; 
 async function saveAttendanceConfigToDB(
   config: Partial<AttendanceConfig>, 
   debugMode?: boolean,
-  attendanceCode?: string | null,
+  attendanceCode1?: string | null,
+  attendanceCode2?: string | null,
+  attendanceCodesWeek?: number | null,
   codeEnabled?: boolean,
-  codeCreatedAt?: string | null
 ): Promise<void> {
   const updateData: Record<string, unknown> = {};
   
-  if (config.dayOfWeek !== undefined) {
-    updateData.attendanceDayOfWeek = config.dayOfWeek;
-  }
-  if (config.session1Start !== undefined) {
-    updateData.attendanceSession1Start = JSON.stringify(config.session1Start);
-  }
-  if (config.session1Duration !== undefined) {
-    updateData.attendanceSession1Duration = config.session1Duration;
-  }
-  if (config.session2Start !== undefined) {
-    updateData.attendanceSession2Start = JSON.stringify(config.session2Start);
-  }
-  if (config.session2Duration !== undefined) {
-    updateData.attendanceSession2Duration = config.session2Duration;
-  }
-  if (config.weekStartDate !== undefined) {
-    updateData.attendanceWeekStartDate = config.weekStartDate;
-  }
-  if (debugMode !== undefined) {
-    updateData.attendanceDebugMode = debugMode;
-  }
-  if (attendanceCode !== undefined) {
-    updateData.attendanceCode = attendanceCode;
-  }
-  if (codeEnabled !== undefined) {
-    updateData.attendanceCodeEnabled = codeEnabled;
-  }
-  if (codeCreatedAt !== undefined) {
-    updateData.attendanceCodeCreatedAt = codeCreatedAt;
-  }
+  if (config.dayOfWeek !== undefined) updateData.attendanceDayOfWeek = config.dayOfWeek;
+  if (config.session1Start !== undefined) updateData.attendanceSession1Start = JSON.stringify(config.session1Start);
+  if (config.session1Duration !== undefined) updateData.attendanceSession1Duration = config.session1Duration;
+  if (config.session2Start !== undefined) updateData.attendanceSession2Start = JSON.stringify(config.session2Start);
+  if (config.session2Duration !== undefined) updateData.attendanceSession2Duration = config.session2Duration;
+  if (config.weekStartDate !== undefined) updateData.attendanceWeekStartDate = config.weekStartDate;
+  if (debugMode !== undefined) updateData.attendanceDebugMode = debugMode;
+  if (attendanceCode1 !== undefined) updateData.attendanceCode1 = attendanceCode1;
+  if (attendanceCode2 !== undefined) updateData.attendanceCode2 = attendanceCode2;
+  if (attendanceCodesWeek !== undefined) updateData.attendanceCodesWeek = attendanceCodesWeek;
+  if (codeEnabled !== undefined) updateData.attendanceCodeEnabled = codeEnabled;
 
   try {
     await serverDatabases.updateDocument(
@@ -164,59 +141,50 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     // 从数据库获取配置
-    const { config, debugMode, attendanceCode, codeEnabled, codeCreatedAt } = await getAttendanceConfigFromDB();
+    const { config, debugMode, attendanceCode1, attendanceCode2, attendanceCodesWeek, codeEnabled } = await getAttendanceConfigFromDB();
 
-    // 获取调试模式状态
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const currentHour = now.getHours();
+    const weekNumber = getCurrentWeekNumberWithConfig(config);
+
+    let code1 = attendanceCode1;
+    let code2 = attendanceCode2;
+
+    // 每周配置日到达时段1开始时间，自动生成两个新验证码（每周只生成一次）
+    if ((debugMode || dayOfWeek === config.dayOfWeek) && currentHour >= config.session1Start.hour && attendanceCodesWeek !== weekNumber) {
+      code1 = generateAttendanceCode();
+      code2 = generateAttendanceCode();
+      await saveAttendanceConfigToDB({}, undefined, code1, code2, weekNumber, true);
+    }
+
+    // 获取调试/管理状态
     if (action === 'debug-status') {
-      // 计算验证码剩余时间
-      let codeExpiresIn = null;
-      if (attendanceCode && codeCreatedAt && codeEnabled) {
-        const createdTime = new Date(codeCreatedAt);
-        const now = new Date();
-        const minutesElapsed = (now.getTime() - createdTime.getTime()) / (1000 * 60);
-        codeExpiresIn = Math.max(0, 10 - minutesElapsed); // 剩余分钟数
-      }
-
       return NextResponse.json({
         debugMode,
         config,
-        attendanceCode,
+        attendanceCode1: code1,
+        attendanceCode2: code2,
+        attendanceCodesWeek: weekNumber,
         codeEnabled,
-        codeCreatedAt,
-        codeExpiresIn,
       });
     }
 
-    const session = getCurrentAttendanceSessionWithConfig(config, debugMode);
-    const weekNumber = getCurrentWeekNumberWithConfig(config);
+    // 只要是配置的星期，全天开放点名（移除时间窗口限制）
+    const isAttendanceOpen = debugMode || dayOfWeek === config.dayOfWeek;
     const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
-    if (!session) {
-      return NextResponse.json({
-        isAttendanceOpen: false,
-        session: null,
-        message: `当前不在点名时间。点名时间为每${dayNames[config.dayOfWeek]} ${config.session1Start.hour}:${String(config.session1Start.minute).padStart(2, '0')}-${config.session1Start.hour + Math.floor((config.session1Start.minute + config.session1Duration) / 60)}:${String((config.session1Start.minute + config.session1Duration) % 60).padStart(2, '0')} 或 ${config.session2Start.hour}:${String(config.session2Start.minute).padStart(2, '0')}-${config.session2Start.hour + Math.floor((config.session2Start.minute + config.session2Duration) / 60)}:${String((config.session2Start.minute + config.session2Duration) % 60).padStart(2, '0')}`,
-        weekNumber,
-        debugMode,
-        config,
-        codeEnabled,
-        hasCode: !!attendanceCode,
-        codeCreatedAt,
-      });
-    }
-
     return NextResponse.json({
-      isAttendanceOpen: true,
-      session: {
-        sessionTime: session.sessionTime,
-        minutesRemaining: session.minutesRemaining,
-      },
+      isAttendanceOpen,
+      session: null,
+      message: isAttendanceOpen
+        ? `今天是点名日（每${dayNames[config.dayOfWeek]}），请输入对应时段的验证码进行签到`
+        : `今天不是点名日。点名日为每${dayNames[config.dayOfWeek]}`,
       weekNumber,
       debugMode,
       config,
       codeEnabled,
-      hasCode: !!attendanceCode,
-      codeCreatedAt,
+      hasCode: !!(code1 || code2),
     });
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
@@ -267,11 +235,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // 从数据库获取当前配置
-    const { config: currentConfig, debugMode: currentDebugMode, attendanceCode: currentCode, codeEnabled: currentCodeEnabled, codeCreatedAt: currentCodeCreatedAt } = await getAttendanceConfigFromDB();
+    const { config: currentConfig, debugMode: currentDebugMode, attendanceCode1: currentCode1, attendanceCode2: currentCode2, codeEnabled: currentCodeEnabled } = await getAttendanceConfigFromDB();
 
     // 切换调试模式
     if (body.action === 'toggle-debug') {
-      await saveAttendanceConfigToDB({}, body.enabled, undefined, undefined);
+      await saveAttendanceConfigToDB({}, body.enabled, undefined, undefined, undefined, undefined);
       return NextResponse.json({
         success: true,
         debugMode: body.enabled,
@@ -281,7 +249,7 @@ export async function POST(request: NextRequest) {
 
     // 更新点名配置
     if (body.action === 'update-config') {
-      await saveAttendanceConfigToDB(body.config, undefined, undefined, undefined);
+      await saveAttendanceConfigToDB(body.config, undefined, undefined, undefined, undefined, undefined);
       const { config: updatedConfig } = await getAttendanceConfigFromDB();
       return NextResponse.json({
         success: true,
@@ -290,40 +258,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 生成新验证码
+    // 手动生成两个新验证码
     if (body.action === 'generate-code') {
-      const newCode = generateAttendanceCode();
-      const now = new Date().toISOString();
-      await saveAttendanceConfigToDB({}, undefined, newCode, true, now);
+      const newCode1 = generateAttendanceCode();
+      const newCode2 = generateAttendanceCode();
+      const weekNum = getCurrentWeekNumberWithConfig(currentConfig);
+      await saveAttendanceConfigToDB({}, undefined, newCode1, newCode2, weekNum, true);
       return NextResponse.json({
         success: true,
-        attendanceCode: newCode,
+        attendanceCode1: newCode1,
+        attendanceCode2: newCode2,
         codeEnabled: true,
-        codeCreatedAt: now,
-        message: `验证码已生成: ${newCode}`,
-      });
-    }
-
-    // 切换验证码开关
-    if (body.action === 'toggle-code') {
-      await saveAttendanceConfigToDB({}, undefined, body.enabled ? currentCode : null, body.enabled, body.enabled ? currentCodeCreatedAt : null);
-      return NextResponse.json({
-        success: true,
-        codeEnabled: body.enabled,
-        attendanceCode: body.enabled ? currentCode : null,
-        codeCreatedAt: body.enabled ? currentCodeCreatedAt : null,
-        message: body.enabled ? '验证码功能已开启' : '验证码功能已关闭',
+        message: `验证码已生成 — 时段1: ${newCode1}，时段2: ${newCode2}`,
       });
     }
 
     // 清除验证码
     if (body.action === 'clear-code') {
-      await saveAttendanceConfigToDB({}, undefined, null, false, null);
+      await saveAttendanceConfigToDB({}, undefined, null, null, null, false);
       return NextResponse.json({
         success: true,
         codeEnabled: false,
-        attendanceCode: null,
-        codeCreatedAt: null,
+        attendanceCode1: null,
+        attendanceCode2: null,
         message: '验证码已清除',
       });
     }
@@ -338,40 +295,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证码检查
-    if (currentCodeEnabled && currentCode) {
+    // 星期检查（移除时间窗口限制，全天开放点名）
+    const nowDate = new Date();
+    const nowDay = nowDate.getDay();
+    if (!currentDebugMode && nowDay !== currentConfig.dayOfWeek) {
+      const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      return NextResponse.json(
+        { error: `今天不是点名日。点名日为每${dayNames[currentConfig.dayOfWeek]}` },
+        { status: 400 }
+      );
+    }
+
+    // 根据验证码判断是哪个时段
+    let sessionTime: string;
+    let sessionNumber: 1 | 2;
+
+    if (currentCodeEnabled && (currentCode1 || currentCode2)) {
       if (!verificationCode) {
         return NextResponse.json(
           { error: '请输入点名验证码', requireCode: true },
           { status: 400 }
         );
       }
-      if (verificationCode !== currentCode) {
+      if (verificationCode === currentCode1) {
+        sessionTime = `${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute).padStart(2, '0')}`;
+        sessionNumber = 1;
+      } else if (verificationCode === currentCode2) {
+        sessionTime = `${currentConfig.session2Start.hour}:${String(currentConfig.session2Start.minute).padStart(2, '0')}`;
+        sessionNumber = 2;
+      } else {
         return NextResponse.json(
           { error: '验证码错误，请检查后重试', requireCode: true },
           { status: 400 }
         );
       }
+    } else {
+      // 无验证码时，按当前时间判断时段
+      const currentMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+      const session2StartMinutes = currentConfig.session2Start.hour * 60 + currentConfig.session2Start.minute;
+      if (currentMinutes < session2StartMinutes) {
+        sessionTime = `${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute).padStart(2, '0')}`;
+        sessionNumber = 1;
+      } else {
+        sessionTime = `${currentConfig.session2Start.hour}:${String(currentConfig.session2Start.minute).padStart(2, '0')}`;
+        sessionNumber = 2;
+      }
     }
-
-    // 检查点名时间
-    const session = getCurrentAttendanceSessionWithConfig(currentConfig, currentDebugMode);
-    
-    if (!session && !currentDebugMode) {
-      const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-      return NextResponse.json(
-        { error: `当前不在点名时间。点名时间为每${dayNames[currentConfig.dayOfWeek]} ${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute).padStart(2, '0')}-${currentConfig.session1Start.hour + Math.floor((currentConfig.session1Start.minute + currentConfig.session1Duration) / 60)}:${String((currentConfig.session1Start.minute + currentConfig.session1Duration) % 60).padStart(2, '0')} 或 ${currentConfig.session2Start.hour}:${String(currentConfig.session2Start.minute).padStart(2, '0')}-${currentConfig.session2Start.hour + Math.floor((currentConfig.session2Start.minute + currentConfig.session2Duration) / 60)}:${String((currentConfig.session2Start.minute + currentConfig.session2Duration) % 60).padStart(2, '0')}` },
-        { status: 400 }
-      );
-    }
-
-    // 确定当前时段
-    const sessionTime = session ? session.sessionTime : (currentDebugMode ? `${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute).padStart(2, '0')}` : '15:20');
 
     // 检查是否已有点名记录（包括 pending 状态）
     const weekNumber = getCurrentWeekNumberWithConfig(currentConfig);
-    const now = new Date();
-    const nowIso = now.toISOString();
+    const nowIso = nowDate.toISOString();
 
     // 查找当前时段本周的记录（不限日期，因为使用 weekNumber）
     let existingRecord = null;
@@ -403,17 +376,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 判断是否迟到：如果已经超出时段的正常窗口但仍在迟到窗口内
-    // session.minutesRemaining <= 0 表示正常窗口已结束
-    // 迟到窗口：正常窗口结束后的 5 分钟内
-    let checkInStatus: 'present' | 'late' = 'present';
-    let lateNote = '';
-    
-    if (session && session.minutesRemaining !== undefined && session.minutesRemaining <= 0) {
-      // 如果 session 存在但 minutesRemaining <= 0，说明在迟到窗口内
-      checkInStatus = 'late';
-      lateNote = '迟到点名（超过正常点名时间）';
-    }
+    // 所有在点名日的签到均视为出席（不再按时间窗口区分迟到）
+    const checkInStatus: 'present' = 'present';
+    const lateNote = '';
 
     console.log('[DEBUG POST] 点名处理:', {
       studentId,
@@ -443,7 +408,6 @@ export async function POST(request: NextRequest) {
     } else {
       // 创建新记录（未初始化时段的情况）
       // 使用 uniqueKey 作为文档ID：studentId_sessionNumber_weekNumber
-      const sessionNumber = session ? session.sessionNumber : 1;
       const uniqueKey = `${studentId}_${sessionNumber}_${weekNumber}`;
       
       try {
