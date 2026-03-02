@@ -1,7 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { NextResponse } from 'next/server';
-import { databases } from '@/services/appwrite';
-import { Query } from 'appwrite';
+import { serverDatabases } from '@/services/appwrite-server';
 import bcrypt from 'bcryptjs';
 
 const APPWRITE_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
@@ -59,7 +58,7 @@ export async function POST(request: Request) {
 
     // 2. 验证用户存在且邮箱匹配
     try {
-      const userRecord = await databases.getDocument(
+      const userRecord = await serverDatabases.getDocument(
         APPWRITE_DATABASE_ID,
         USERS_COLLECTION_ID,
         tokenData.userId
@@ -127,7 +126,7 @@ export async function POST(request: Request) {
 
     // 5. 更新用户密码
     try {
-      await databases.updateDocument(
+      await serverDatabases.updateDocument(
         APPWRITE_DATABASE_ID,
         USERS_COLLECTION_ID,
         tokenData.userId,

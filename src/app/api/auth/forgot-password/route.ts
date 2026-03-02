@@ -1,7 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { NextResponse } from 'next/server';
-import { databases } from '@/services/appwrite';
-import { Query } from 'appwrite';
+import { serverDatabases, Query } from '@/services/appwrite-server';
 import { Resend } from 'resend';
 
 const APPWRITE_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
@@ -41,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     // 检查用户是否存在
-    const userRecords = await databases.listDocuments(
+    const userRecords = await serverDatabases.listDocuments(
       APPWRITE_DATABASE_ID,
       USERS_COLLECTION_ID,
       [Query.equal('email', email.toLowerCase().trim())]
