@@ -74,76 +74,26 @@ export async function studentLogin(
   email: string,
   password: string
 ): Promise<StudentUser & { requirePasswordChange: boolean }> {
-  try {
-    // 1. 从数据库查找学生
-    const studentRecords = await databases.listDocuments(
-      APPWRITE_DATABASE_ID,
-      USERS_COLLECTION_ID,
-      [Query.equal('email', email.toLowerCase().trim())]
-    );
+  const res = await fetch('/api/auth/student-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
 
-    if (studentRecords.documents.length === 0) {
-      throw new Error('账号或密码错误');
-    }
+  const data = await res.json();
 
-    const studentRecord = studentRecords.documents[0];
-
-    // 2. 检查角色
-    if (studentRecord.role !== 'student') {
-      throw new Error('账号或密码错误');
-    }
-
-    // 3. 验证密码
-    const passwordHash = studentRecord.passwordHash;
-    if (!passwordHash) {
-      throw new Error('账户未设置密码，请联系管理员');
-    }
-
-    const passwordMatch = await bcrypt.compare(password, passwordHash);
-    if (!passwordMatch) {
-      throw new Error('账号或密码错误');
-    }
-
-    // 4. 更新最后登录时间
-    try {
-      await databases.updateDocument(
-        APPWRITE_DATABASE_ID,
-        USERS_COLLECTION_ID,
-        studentRecord.$id,
-        {
-          lastLogin: new Date().toISOString(),
-        }
-      );
-    } catch (updateError) {
-      console.warn('更新登录时间失败:', updateError);
-      // 继续登录流程
-    }
-
-    // 5. 构建返回对象
-    const studentUser: StudentUser & { requirePasswordChange: boolean } = {
-      id: studentRecord.$id,
-      email: studentRecord.email,
-      name: studentRecord.chineseName || studentRecord.name || '',
-      studentId: studentRecord.studentId || '',
-      chineseName: studentRecord.chineseName || '',
-      englishName: studentRecord.englishName || '',
-      classNameCn: studentRecord.classNameCn || '',
-      classNameEn: studentRecord.classNameEn || '',
-      classCode: studentRecord.classCode || '',
-      createdAt: studentRecord.createdAt || studentRecord.$createdAt,
-      requirePasswordChange: studentRecord.requirePasswordChange === true,
-    };
-
-    // 6. 存储学生会话到 localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('studentSession', JSON.stringify(studentUser));
-    }
-
-    return studentUser;
-  } catch (error: unknown) {
-    const err = error as Error & { message?: string };
-    throw new Error(err.message || '登录失败，请稍后重试');
+  if (!res.ok) {
+    throw new Error(data.error || '登录失败，请稍后重试');
   }
+
+  const studentUser = data as StudentUser & { requirePasswordChange: boolean };
+
+  // Store session in localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('studentSession', JSON.stringify(studentUser));
+  }
+
+  return studentUser;
 }
 
 /**
@@ -157,86 +107,30 @@ export async function changeStudentPassword(
   currentPassword: string,
   newPassword: string
 ): Promise<void> {
-  try {
-    // 1. 获取学生记录
-    const studentRecord = await databases.getDocument(
-      APPWRITE_DATABASE_ID,
-      USERS_COLLECTION_ID,
-      studentId
-    );
+  const res = await fetch('/api/auth/student-change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentId, currentPassword, newPassword }),
+  });
 
-    // 2. 验证当前密码
-    const passwordHash = studentRecord.passwordHash;
-    if (!passwordHash) {
-      throw new Error('账户密码数据异常');
-    }
+  const data = await res.json();
 
-    // Debug logging
-    console.log('=== Password Change Debug ===');
-    console.log('Current password received:', currentPassword);
-    console.log('Current password type:', typeof currentPassword);
-    console.log('Current password length:', currentPassword?.length);
-    console.log('Student ID from record:', studentRecord.studentId);
-    console.log('Student ID type:', typeof studentRecord.studentId);
-    console.log('Are they equal?:', currentPassword === studentRecord.studentId);
-    console.log('Password hash exists:', !!passwordHash);
+  if (!res.ok) {
+    throw new Error(data.error || '修改密码失败');
+  }
 
-    const isPasswordCorrect = await bcrypt.compare(currentPassword, passwordHash);
-    console.log('Bcrypt comparison result:', isPasswordCorrect);
-    
-    if (!isPasswordCorrect) {
-      throw new Error('当前密码不正确');
-    }
-
-    // 3. 检查新密码不能与默认密码或学号相同
-    if (newPassword === DEFAULT_STUDENT_PASSWORD) {
-      throw new Error('新密码不能为默认密码');
-    }
-    
-    // 检查新密码不能与学号相同
-    const studentIdFromRecord = studentRecord.studentId;
-    if (studentIdFromRecord && newPassword === studentIdFromRecord) {
-      throw new Error('新密码不能与学号相同');
-    }
-
-    // 4. 密码强度验证
-    if (newPassword.length < 6) {
-      throw new Error('新密码至少需要6个字符');
-    }
-
-    // 5. 更新密码
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-    await databases.updateDocument(
-      APPWRITE_DATABASE_ID,
-      USERS_COLLECTION_ID,
-      studentId,
-      {
-        passwordHash: hashedNewPassword,
-        requirePasswordChange: false,
-        updatedAt: new Date().toISOString(),
-      }
-    );
-
-    // 6. 更新 localStorage 中的 session
-    if (typeof window !== 'undefined') {
-      const sessionStr = localStorage.getItem('studentSession');
-      if (sessionStr) {
-        try {
-          const session = JSON.parse(sessionStr);
-          session.requirePasswordChange = false;
-          localStorage.setItem('studentSession', JSON.stringify(session));
-        } catch {
-          // 忽略
-        }
+  // Update localStorage session
+  if (typeof window !== 'undefined') {
+    const sessionStr = localStorage.getItem('studentSession');
+    if (sessionStr) {
+      try {
+        const session = JSON.parse(sessionStr);
+        session.requirePasswordChange = false;
+        localStorage.setItem('studentSession', JSON.stringify(session));
+      } catch {
+        // ignore
       }
     }
-
-    console.log('学生密码更新成功');
-  } catch (error) {
-    const err = error as Error & { message?: string };
-    console.error('修改密码失败:', err.message);
-    throw new Error(err.message || '修改密码失败');
   }
 }
 

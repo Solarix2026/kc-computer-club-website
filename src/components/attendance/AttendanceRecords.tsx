@@ -758,7 +758,7 @@ export default function AttendanceRecords() {
                 }}
               >
                 <span className="material-symbols-outlined" style={{fontSize: '18px'}}>refresh</span>
-                {attendanceCode ? '刷新验证码' : '生成验证码'}
+                {(attendanceCode1 || attendanceCode2) ? '刷新验证码' : '生成验证码'}
               </button>
               
               {codeEnabled && (

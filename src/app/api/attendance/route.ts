@@ -141,7 +141,8 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     // 从数据库获取配置
-    const { config, debugMode, attendanceCode1, attendanceCode2, attendanceCodesWeek, codeEnabled } = await getAttendanceConfigFromDB();
+    const { config, attendanceCode1, attendanceCode2, attendanceCodesWeek, codeEnabled } = await getAttendanceConfigFromDB();
+    const debugMode = false; // 调试模式已禁用
 
     const now = new Date();
     const dayOfWeek = now.getDay();
@@ -152,7 +153,7 @@ export async function GET(request: NextRequest) {
     let code2 = attendanceCode2;
 
     // 每周配置日到达时段1开始时间，自动生成两个新验证码（每周只生成一次）
-    if ((debugMode || dayOfWeek === config.dayOfWeek) && currentHour >= config.session1Start.hour && attendanceCodesWeek !== weekNumber) {
+    if (dayOfWeek === config.dayOfWeek && currentHour >= config.session1Start.hour && attendanceCodesWeek !== weekNumber) {
       code1 = generateAttendanceCode();
       code2 = generateAttendanceCode();
       await saveAttendanceConfigToDB({}, undefined, code1, code2, weekNumber, true);
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 只要是配置的星期，全天开放点名（移除时间窗口限制）
-    const isAttendanceOpen = debugMode || dayOfWeek === config.dayOfWeek;
+    const isAttendanceOpen = dayOfWeek === config.dayOfWeek;
     const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
     return NextResponse.json({
@@ -235,16 +236,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // 从数据库获取当前配置
-    const { config: currentConfig, debugMode: currentDebugMode, attendanceCode1: currentCode1, attendanceCode2: currentCode2, codeEnabled: currentCodeEnabled } = await getAttendanceConfigFromDB();
+    const { config: currentConfig, attendanceCode1: currentCode1, attendanceCode2: currentCode2, codeEnabled: currentCodeEnabled } = await getAttendanceConfigFromDB();
 
-    // 切换调试模式
+    // 切换调试模式（已禁用，返回错误）
     if (body.action === 'toggle-debug') {
-      await saveAttendanceConfigToDB({}, body.enabled, undefined, undefined, undefined, undefined);
-      return NextResponse.json({
-        success: true,
-        debugMode: body.enabled,
-        message: body.enabled ? '调试模式已开启' : '调试模式已关闭',
-      });
+      return NextResponse.json(
+        { success: false, error: '调试模式已禁用' },
+        { status: 403 }
+      );
     }
 
     // 更新点名配置
@@ -298,7 +297,7 @@ export async function POST(request: NextRequest) {
     // 星期检查（移除时间窗口限制，全天开放点名）
     const nowDate = new Date();
     const nowDay = nowDate.getDay();
-    if (!currentDebugMode && nowDay !== currentConfig.dayOfWeek) {
+    if (nowDay !== currentConfig.dayOfWeek) {
       const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
       return NextResponse.json(
         { error: `今天不是点名日。点名日为每${dayNames[currentConfig.dayOfWeek]}` },
@@ -377,7 +376,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 所有在点名日的签到均视为出席（不再按时间窗口区分迟到）
-    const checkInStatus: 'present' = 'present';
+    const checkInStatus: 'present' | 'late' = 'present';
     const lateNote = '';
 
     console.log('[DEBUG POST] 点名处理:', {
@@ -401,7 +400,7 @@ export async function POST(request: NextRequest) {
         {
           checkInTime: nowIso,
           status: checkInStatus,
-          notes: lateNote || (currentDebugMode ? '[DEBUG] 调试模式点名' : ''),
+          notes: lateNote || '',
         }
       );
       console.log('[DEBUG POST] 更新 pending 记录为:', checkInStatus);
@@ -423,7 +422,7 @@ export async function POST(request: NextRequest) {
             sessionTime: sessionTime,
             weekNumber,
             status: checkInStatus,
-            notes: lateNote || (currentDebugMode ? '[DEBUG] 调试模式点名' : ''),
+            notes: lateNote || '',
             createdAt: nowIso,
             uniqueKey,  // 保存 uniqueKey 字段以便查询
           }
@@ -449,7 +448,7 @@ export async function POST(request: NextRequest) {
       status: record.status,
     });
 
-    const statusMessage = checkInStatus === 'late' ? '点名成功（迟到）！' : '点名成功！';
+    const statusMessage = '点名成功！';
 
     return NextResponse.json({
       success: true,
