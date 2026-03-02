@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { NextRequest, NextResponse } from 'next/server';
 import { serverDatabases, Query } from '@/services/appwrite-server';
+import bcrypt from 'bcryptjs';
 
 const APPWRITE_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
 const USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION || '';
@@ -135,6 +136,7 @@ export async function GET(
       position: doc.position || '',
       notes: doc.notes || '',
       role: doc.role,
+      requirePasswordChange: doc.requirePasswordChange ?? true,
       createdAt: doc.createdAt || doc.$createdAt,
       attendanceStats,
       projects,
@@ -182,6 +184,19 @@ export async function PATCH(
           updateData['name'] = body.chineseName;
         }
       }
+    }
+
+    // 管理员重置密码
+    if (body.newPassword) {
+      if (body.newPassword.length < 6) {
+        return NextResponse.json(
+          { success: false, error: '密码至少需要 6 位' },
+          { status: 400 }
+        );
+      }
+      const salt = await bcrypt.genSalt(10);
+      updateData.passwordHash = await bcrypt.hash(body.newPassword, salt);
+      updateData.requirePasswordChange = body.requirePasswordChange ?? false;
     }
     
     await serverDatabases.updateDocument(

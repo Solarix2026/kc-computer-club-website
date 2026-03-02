@@ -158,6 +158,7 @@ export async function GET() {
         position: doc.position || '',
         notes: doc.notes || '',
         role: doc.role,
+        requirePasswordChange: doc.requirePasswordChange ?? true,
         createdAt: doc.createdAt || doc.$createdAt,
         attendanceStats,
         projects,

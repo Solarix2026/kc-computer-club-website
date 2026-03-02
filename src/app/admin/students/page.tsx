@@ -23,6 +23,7 @@ interface StudentFullInfo {
   position: string;
   notes: string;
   role: string;
+  requirePasswordChange: boolean;
   createdAt: string;
   attendanceStats: {
     total: number;
@@ -66,6 +67,13 @@ export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<StudentFullInfo | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // 密码重置
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+  const [passwordResetMsg, setPasswordResetMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
   // Excel导入相关状态
   const [showImportModal, setShowImportModal] = useState(false);
@@ -358,6 +366,42 @@ export default function StudentsPage() {
     } catch (error) {
       console.error('删除失败:', error);
       alert('删除失败');
+    }
+  };
+
+  // 管理员重置学生密码
+  const handleResetPassword = async () => {
+    if (!selectedStudent || !newPassword) return;
+    if (newPassword.length < 6) {
+      setPasswordResetMsg({ type: 'error', text: '密码至少需要 6 位' });
+      return;
+    }
+    setPasswordResetLoading(true);
+    setPasswordResetMsg(null);
+    try {
+      const res = await fetch(`/api/admin/students/${selectedStudent.$id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword, requirePasswordChange: false }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPasswordResetMsg({ type: 'success', text: '密码已成功重置' });
+        setNewPassword('');
+        setShowPasswordReset(false);
+        // 更新本地状态
+        setSelectedStudent({ ...selectedStudent, requirePasswordChange: false });
+        setStudents(prev => prev.map(s =>
+          s.$id === selectedStudent.$id ? { ...s, requirePasswordChange: false } : s
+        ));
+        SecureCache.remove(CACHE_KEY);
+      } else {
+        setPasswordResetMsg({ type: 'error', text: data.error || '重置失败' });
+      }
+    } catch {
+      setPasswordResetMsg({ type: 'error', text: '网络错误，请重试' });
+    } finally {
+      setPasswordResetLoading(false);
     }
   };
 
@@ -928,7 +972,7 @@ export default function StudentsPage() {
                   学生详情
                 </h2>
                 <button
-                  onClick={() => { setShowDetailModal(false); setSelectedStudent(null); }}
+                  onClick={() => { setShowDetailModal(false); setSelectedStudent(null); setShowPasswordReset(false); setNewPassword(''); setPasswordResetMsg(null); }}
                   style={{ background: 'none', border: 'none', color: '#8a9e94', cursor: 'pointer', padding: '4px' }}
                 >
                   <span className="material-symbols-outlined">close</span>
@@ -1055,6 +1099,140 @@ export default function StudentsPage() {
                     <p style={{ color: '#6189a5', textAlign: 'center', margin: 0 }}>暂无项目参与</p>
                   )}
                 </div>
+
+                {/* 账号安全 */}
+                <div style={{ backgroundColor: '#101922', borderRadius: '12px', padding: '20px', marginTop: '20px' }}>
+                  <h4 style={{ color: 'white', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="material-symbols-outlined" style={{ color: '#f59e0b' }}>lock</span>
+                    账号安全
+                  </h4>
+
+                  {/* 凭据展示 */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                    <div style={{ backgroundColor: '#1a2632', borderRadius: '8px', padding: '12px' }}>
+                      <div style={{ fontSize: '11px', color: '#6189a5', marginBottom: '4px' }}>登录邮箱</div>
+                      <div style={{ color: '#137fec', fontFamily: 'monospace', fontSize: '13px', wordBreak: 'break-all' }}>{selectedStudent.email}</div>
+                    </div>
+                    <div style={{ backgroundColor: '#1a2632', borderRadius: '8px', padding: '12px' }}>
+                      <div style={{ fontSize: '11px', color: '#6189a5', marginBottom: '4px' }}>密码状态</div>
+                      {selectedStudent.requirePasswordChange ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+                          <span style={{ color: '#f59e0b', fontSize: '13px' }}>使用默认密码（学号）</span>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} />
+                          <span style={{ color: '#10b981', fontSize: '13px' }}>已修改密码</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 重置密码区域 */}
+                  {passwordResetMsg && (
+                    <div style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      marginBottom: '12px',
+                      backgroundColor: passwordResetMsg.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: passwordResetMsg.type === 'success' ? '#10b981' : '#ef4444',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                        {passwordResetMsg.type === 'success' ? 'check_circle' : 'error'}
+                      </span>
+                      {passwordResetMsg.text}
+                    </div>
+                  )}
+
+                  {showPasswordReset ? (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="输入新密码（至少 6 位）"
+                          onKeyDown={(e) => e.key === 'Enter' && handleResetPassword()}
+                          style={{
+                            width: '100%',
+                            padding: '10px 40px 10px 12px',
+                            backgroundColor: '#0d1a24',
+                            border: '1px solid #2a3c4a',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '14px',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                        <button
+                          onClick={() => setShowNewPassword(v => !v)}
+                          style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6189a5', cursor: 'pointer', padding: 0 }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                            {showNewPassword ? 'visibility_off' : 'visibility'}
+                          </span>
+                        </button>
+                      </div>
+                      <button
+                        onClick={handleResetPassword}
+                        disabled={passwordResetLoading || !newPassword}
+                        style={{
+                          padding: '10px 16px',
+                          backgroundColor: '#137fec',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: passwordResetLoading || !newPassword ? 'not-allowed' : 'pointer',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          opacity: !newPassword ? 0.6 : 1,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {passwordResetLoading ? '保存中...' : '确认'}
+                      </button>
+                      <button
+                        onClick={() => { setShowPasswordReset(false); setNewPassword(''); setPasswordResetMsg(null); }}
+                        style={{
+                          padding: '10px 14px',
+                          backgroundColor: 'transparent',
+                          color: '#8a9e94',
+                          border: '1px solid #2a3c4a',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                        }}
+                      >
+                        取消
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setShowPasswordReset(true); setPasswordResetMsg(null); }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px 18px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        color: '#f59e0b',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lock_reset</span>
+                      重置密码
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div style={{ padding: '16px 24px', borderTop: '1px solid #2a3c4a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1093,7 +1271,7 @@ export default function StudentsPage() {
                     编辑信息
                   </a>
                   <button
-                    onClick={() => { setShowDetailModal(false); setSelectedStudent(null); }}
+                    onClick={() => { setShowDetailModal(false); setSelectedStudent(null); setShowPasswordReset(false); setNewPassword(''); setPasswordResetMsg(null); }}
                     style={{
                       padding: '10px 20px',
                       backgroundColor: '#137fec',
