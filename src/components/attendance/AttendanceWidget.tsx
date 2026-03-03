@@ -41,11 +41,30 @@ export default function AttendanceWidget({
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
+  const [completedSessions, setCompletedSessions] = useState<string[]>([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [debugMode, setDebugMode] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [requireCode, setRequireCode] = useState(false);
+
+  // 从服务器加载该学生本周的已签到记录
+  const loadStudentRecords = async (weekNumber: number) => {
+    if (!studentEmail) return;
+    try {
+      const res = await fetch(`/api/attendance/my-records?email=${encodeURIComponent(studentEmail)}`);
+      const data = await res.json();
+      if (data.success && data.recordsByWeek[weekNumber]) {
+        const done: string[] = data.recordsByWeek[weekNumber]
+          .filter((r: { status: string }) => r.status === 'present' || r.status === 'late')
+          .map((r: { sessionTime: string }) => r.sessionTime);
+        setCompletedSessions(done);
+        if (done.length > 0) setHasCheckedIn(false); // reset so button isn't permanently disabled
+      }
+    } catch {
+      // ignore — non-critical
+    }
+  };
 
   // 获取点名状态
   const fetchAttendanceStatus = async () => {
@@ -61,6 +80,10 @@ export default function AttendanceWidget({
         setRequireCode(false);
       }
       setError('');
+      // 加载该学生本周的签到记录
+      if (studentEmail && data.weekNumber) {
+        await loadStudentRecords(data.weekNumber);
+      }
     } catch (err) {
       const error = err as Error & { message?: string };
       setError('无法获取点名状态：' + (error.message || '未知错误'));
@@ -125,19 +148,39 @@ export default function AttendanceWidget({
         if (data.requireCode) {
           setRequireCode(true);
         }
+        // 如果是「已完成点名」的提示，作为信息提示而非错误
+        if (data.error && (data.error.includes('您已在') || data.error.includes('已完成点名'))) {
+          setMessage(data.error);
+          setHasCheckedIn(true);
+          setVerificationCode('');
+          // 提取已完成的时段时间，防止重复提交
+          const sessionMatch = (data.error as string).match(/(\d{1,2}:\d{2})/);
+          if (sessionMatch) {
+            setCompletedSessions(prev => [...new Set([...prev, sessionMatch[1]])]);
+          }
+          setTimeout(() => {
+            setMessage('');
+            setHasCheckedIn(false);
+          }, 5000);
+          setIsLoading(false);
+          return;
+        }
         setError(data.error || '点名失败');
         setIsLoading(false);
         return;
       }
 
-      setMessage(`点名成功！时段: ${data.record.sessionTime}`);
+      const sessionTime: string = data.record?.sessionTime || '';
+      setMessage(`点名成功！时段: ${sessionTime}`);
+      if (sessionTime) setCompletedSessions(prev => [...new Set([...prev, sessionTime])]);
       setHasCheckedIn(true);
       setVerificationCode(''); // 清除验证码
       onCheckInSuccess?.();
 
-      // 5秒后清除成功消息
+      // 5秒后清除成功消息并重置点名状态（允许第二时段继续点名）
       setTimeout(() => {
         setMessage('');
+        setHasCheckedIn(false);
       }, 5000);
     } catch (err) {
       const error = err as Error & { message?: string };
@@ -208,6 +251,17 @@ export default function AttendanceWidget({
                   <p className="text-[var(--text-secondary)] text-sm">请输入老师公布的验证码完成签到</p>
                 </div>
               </div>
+
+              {/* 已完成的时段列表 */}
+              {completedSessions.length > 0 && (
+                <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 flex flex-wrap gap-2">
+                  <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
+                  <span className="text-primary text-sm font-medium">本周已签到：</span>
+                  {completedSessions.map(s => (
+                    <span key={s} className="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full font-mono">{s}</span>
+                  ))}
+                </div>
+              )}
 
               {/* 验证码输入框 */}
               {requireCode && !hasCheckedIn && (

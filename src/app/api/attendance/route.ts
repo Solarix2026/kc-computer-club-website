@@ -329,14 +329,31 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      // 无验证码时，按当前时间判断时段
-      const currentMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
-      const session2StartMinutes = currentConfig.session2Start.hour * 60 + currentConfig.session2Start.minute;
-      if (currentMinutes < session2StartMinutes) {
-        sessionTime = `${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute).padStart(2, '0')}`;
+      // 无验证码时：优先检查学生本周时段1是否已完成，若完成则自动分配到时段2
+      const weekNumber_temp = getCurrentWeekNumberWithConfig(currentConfig);
+      const sessionTime1 = `${currentConfig.session1Start.hour}:${String(currentConfig.session1Start.minute).padStart(2, '0')}`;
+      const sessionTime2 = `${currentConfig.session2Start.hour}:${String(currentConfig.session2Start.minute).padStart(2, '0')}`;
+
+      let session1Done = false;
+      try {
+        const s1Records = await serverDatabases.listDocuments(
+          APPWRITE_DATABASE_ID,
+          ATTENDANCE_COLLECTION_ID,
+          [
+            Query.equal('studentId', studentId),
+            Query.equal('sessionTime', sessionTime1),
+            Query.equal('weekNumber', weekNumber_temp),
+            Query.limit(1),
+          ]
+        );
+        session1Done = s1Records.documents.length > 0 && s1Records.documents[0].status !== 'pending';
+      } catch { /* ignore */ }
+
+      if (!session1Done) {
+        sessionTime = sessionTime1;
         sessionNumber = 1;
       } else {
-        sessionTime = `${currentConfig.session2Start.hour}:${String(currentConfig.session2Start.minute).padStart(2, '0')}`;
+        sessionTime = sessionTime2;
         sessionNumber = 2;
       }
     }
@@ -369,8 +386,13 @@ export async function POST(request: NextRequest) {
 
     // 如果已有非 pending 状态的记录，说明已点过名
     if (existingRecord && existingRecord.status !== 'pending') {
+      const statusLabel = existingRecord.status === 'present' ? '出席' : existingRecord.status === 'late' ? '迟到' : '缺席';
+      // If this was session 2 (last session), both are done
+      const bothDone = sessionNumber === 2;
       return NextResponse.json(
-        { error: `您已在 ${sessionTime} 完成点名（状态：${existingRecord.status === 'present' ? '出席' : existingRecord.status === 'late' ? '迟到' : '缺席'}）` },
+        { error: bothDone
+            ? `您本周两个时段均已完成点名（时段2: ${sessionTime} ${statusLabel}）`
+            : `您已在 ${sessionTime} 完成时段${sessionNumber}点名（状态：${statusLabel}）` },
         { status: 400 }
       );
     }
