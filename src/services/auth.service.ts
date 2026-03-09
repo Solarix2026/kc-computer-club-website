@@ -13,7 +13,6 @@ import CryptoJS from 'crypto-js';
 
 const APPWRITE_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
 const USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION || '';
-const ADMINS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_ADMINS_COLLECTION || '';
 
 // 加密密钥（用于加密敏感数据）
 const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'kc-computer-club-2024';
@@ -212,64 +211,21 @@ export async function adminLogin(
   password: string
 ): Promise<AdminUser> {
   try {
-    // 1. 从数据库查找管理员（使用用户名）
-    const adminRecords = await databases.listDocuments(
-      APPWRITE_DATABASE_ID,
-      ADMINS_COLLECTION_ID,
-      [Query.equal('username', adminUsername)]
-    );
+    const response = await fetch('/api/auth/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: adminUsername, password }),
+    });
 
-    if (adminRecords.documents.length === 0) {
-      throw new Error('用户名或密码错误');
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || '管理员登录失败');
     }
 
-    const adminRecord = adminRecords.documents[0];
+    const adminUser: AdminUser = data.admin;
 
-    // 2. 检查管理员是否激活
-    if (!adminRecord.isActive) {
-      throw new Error('此账号已被禁用');
-    }
-
-    // 3. 验证密码哈希
-    const passwordMatch = await bcrypt.compare(password, adminRecord.passwordHash);
-    if (!passwordMatch) {
-      throw new Error('用户名或密码错误');
-    }
-
-    // 4. 更新最后登录时间
-    await databases.updateDocument(
-      APPWRITE_DATABASE_ID,
-      ADMINS_COLLECTION_ID,
-      adminRecord.$id,
-      {
-        lastLogin: new Date().toISOString(),
-      }
-    );
-
-    // 5. 获取关联的用户信息（如果有）
-    let adminName = adminUsername;
-    if (adminRecord.userId) {
-      try {
-        const userRecord = await databases.getDocument(
-          APPWRITE_DATABASE_ID,
-          USERS_COLLECTION_ID,
-          adminRecord.userId
-        );
-        adminName = userRecord.name || adminUsername;
-      } catch {
-        adminName = adminUsername;
-      }
-    }
-
-    const adminUser: AdminUser = {
-      id: adminRecord.$id,
-      email: adminRecord.username + '@admin.local',
-      name: adminName,
-      username: adminRecord.username,
-      role: 'admin',
-    };
-
-    // 6. 存储管理员会话到 localStorage
+    // 存储管理员会话到 localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('adminSession', JSON.stringify(adminUser));
     }
@@ -290,44 +246,19 @@ export async function changeAdminPassword(
   newPassword: string
 ): Promise<void> {
   try {
-    const adminRecords = await databases.listDocuments(
-      APPWRITE_DATABASE_ID,
-      ADMINS_COLLECTION_ID,
-      [Query.equal('username', identifier)]
-    );
+    const response = await fetch('/api/auth/admin-change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: identifier, currentPassword, newPassword }),
+    });
 
-    if (adminRecords.documents.length === 0) {
-      throw new Error('管理员账户不存在');
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || '修改密码失败');
     }
-
-    const adminRecord = adminRecords.documents[0];
-
-    const passwordHash = adminRecord.passwordHash || adminRecord.password;
-    if (!passwordHash) {
-      throw new Error('密码数据异常，请联系系统管理员');
-    }
-
-    const isPasswordCorrect = await bcrypt.compare(currentPassword, passwordHash);
-
-    if (!isPasswordCorrect) {
-      throw new Error('当前密码不正确');
-    }
-
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-    await databases.updateDocument(
-      APPWRITE_DATABASE_ID,
-      ADMINS_COLLECTION_ID,
-      adminRecord.$id,
-      {
-        passwordHash: hashedNewPassword,
-      }
-    );
-
-    console.log('管理员密码更新成功');
   } catch (error) {
     const err = error as Error & { message?: string };
-    console.error('修改密码失败:', err.message);
     throw new Error(err.message || '修改密码失败');
   }
 }
