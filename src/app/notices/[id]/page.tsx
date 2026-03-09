@@ -379,7 +379,7 @@ export default function NoticeDetailPage() {
 
               {/* 文章内容 */}
               <div
-                className="prose prose-lg max-w-none wrap-break-word whitespace-normal [&_a]:text-primary [&_a]:no-underline hover:[&_a]:underline [&_strong]:font-bold [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:text-primary [&_p]:mb-4 [&_p]:wrap-break-word [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:wrap-break-word [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:wrap-break-word [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_li]:wrap-break-word [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:p-4 [&_blockquote]:rounded-r-lg [&_blockquote]:my-8 [&_blockquote]:wrap-break-word"
+                className="prose prose-lg max-w-none wrap-break-word whitespace-pre-wrap [&_a]:text-primary [&_a]:no-underline hover:[&_a]:underline [&_strong]:font-bold [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:text-primary [&_p]:mb-4 [&_p]:wrap-break-word [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:wrap-break-word [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:wrap-break-word [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_li]:wrap-break-word [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:p-4 [&_blockquote]:rounded-r-lg [&_blockquote]:my-8 [&_blockquote]:wrap-break-word"
                 style={{ color: 'var(--foreground)' }}
                 dangerouslySetInnerHTML={{ __html: notice.content }}
               />

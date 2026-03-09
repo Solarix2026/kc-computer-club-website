@@ -409,7 +409,7 @@ function NoticeCard({ notice, featured = false }: NoticeCardProps) {
       }}
     >
       {/* 图片 */}
-      <div className="aspect-video relative overflow-hidden">
+      <div className="aspect-[4/3] relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center transform transition-transform duration-500 group-hover:scale-105"
           style={{ backgroundImage: `url(${notice.imageUrl})` }}

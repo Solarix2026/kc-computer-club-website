@@ -12,12 +12,21 @@ const INSTAGRAM_POST_PATTERN = /^https:\/\/(www\.)?instagram\.com\/(p|reel)\/[A-
 
 function decodeHtmlEntities(str: string): string {
   return str
+    // Unicode escapes: \u4e2d \u6587 etc.
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    // Hex HTML entities: &#x4e2d;
+    .replace(/&#x([0-9a-fA-F]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    // Decimal HTML entities: &#20013;
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    // Named entities
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#34;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    // Escaped newlines
     .replace(/\\n/g, '\n');
 }
 
