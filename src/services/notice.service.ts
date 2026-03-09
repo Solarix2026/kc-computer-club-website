@@ -23,6 +23,7 @@ export interface Notice {
   visibility: 'public' | 'internal';
   images?: string[];
   tags?: string;
+  pinned?: boolean;
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -51,6 +52,7 @@ export interface UpdateNoticeInput {
   publishedAt?: string;
   lastEditorId?: string;
   lastEditorName?: string;
+  pinned?: boolean;
 }
 
 /**
@@ -77,8 +79,12 @@ export async function getAllNotices(onlyPublished = false, visibility: 'public' 
       queries
     );
     const notices = response.documents.map(parseNotice) as unknown as Notice[];
-    // 按createdAt降序排列，最新的在最前面
-    return notices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // 置顶公告优先，再按 createdAt 降序
+    return notices.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   } catch (error: unknown) {
     const err = error as Error & { message?: string };
     console.error('获取公告列表失败:', err);
@@ -152,6 +158,7 @@ function parseNotice(doc: Record<string, unknown>): Notice {
     ...doc,
     images,
     tags,
+    pinned: !!doc.pinned,
   } as unknown as Notice;
 }
 
@@ -232,6 +239,7 @@ export async function updateNotice(
     }
     
     if (input.tags) updateData.tags = JSON.stringify(input.tags);
+    if (input.pinned !== undefined) updateData.pinned = input.pinned;
 
     const notice = await databases.updateDocument(
       APPWRITE_DATABASE_ID,

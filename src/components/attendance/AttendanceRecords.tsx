@@ -373,10 +373,11 @@ export default function AttendanceRecords() {
         setCodeEnabled(true);
         alert(data.message || '验证码生成成功');
       } else {
-        alert('生成验证码失败');
+        alert('生成验证码失败：' + (data.error || '未知错误，请检查后台日志'));
       }
     } catch (err) {
-      alert('生成验证码失败');
+      const error = err as Error & { message?: string };
+      alert('生成验证码失败：' + (error.message || '网络错误'));
     } finally {
       setIsGeneratingCode(false);
     }
@@ -758,7 +759,7 @@ export default function AttendanceRecords() {
                 }}
               >
                 <span className="material-symbols-outlined" style={{fontSize: '18px'}}>refresh</span>
-                {(attendanceCode1 || attendanceCode2) ? '刷新验证码' : '生成验证码'}
+                {isGeneratingCode ? '生成中…（首次约需 5-10 秒）' : (attendanceCode1 || attendanceCode2) ? '刷新验证码' : '生成验证码'}
               </button>
               
               {codeEnabled && (

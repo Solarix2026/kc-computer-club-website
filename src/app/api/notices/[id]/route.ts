@@ -6,6 +6,7 @@ import {
   deleteNotice,
   UpdateNoticeInput,
 } from '@/services/notice.service';
+import { serverDatabases } from '@/services/appwrite-server';
 
 /**
  * GET /api/notices/[id] - 获取单个公告
@@ -66,6 +67,62 @@ export async function PUT(
       { error: err.message || '更新公告失败' },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * PATCH /api/notices/[id] - 置顶/取消置顶（自动创建缺失属性）
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const { pinned } = await request.json();
+    const db = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
+    const coll = process.env.NEXT_PUBLIC_APPWRITE_NOTICES_COLLECTION || '';
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || '';
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '';
+    const apiKey = process.env.APPWRITE_API_KEY || '';
+
+    const doUpdate = () =>
+      serverDatabases.updateDocument(db, coll, id, { pinned: !!pinned });
+
+    try {
+      await doUpdate();
+    } catch (e: unknown) {
+      const err = e as { code?: number };
+      if (err.code === 400) {
+        // 'pinned' 属性不存在于 schema —— 自动创建并重试
+        try {
+          await fetch(
+            `${endpoint}/databases/${db}/collections/${coll}/attributes/boolean`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Appwrite-Project': projectId,
+                'X-Appwrite-Key': apiKey,
+              },
+              body: JSON.stringify({ key: 'pinned', required: false, default: false }),
+              signal: AbortSignal.timeout(8000),
+            }
+          );
+        } catch { /* 属性可能已存在 */ }
+        // 等待 Appwrite 处理新属性
+        await new Promise(r => setTimeout(r, 5000));
+        await doUpdate();
+      } else {
+        throw e;
+      }
+    }
+
+    return NextResponse.json({ success: true, pinned: !!pinned });
+  } catch (error: unknown) {
+    const err = error as Error & { message?: string };
+    console.error('置顶公告失败:', err);
+    return NextResponse.json({ error: err.message || '操作失败' }, { status: 500 });
   }
 }
 

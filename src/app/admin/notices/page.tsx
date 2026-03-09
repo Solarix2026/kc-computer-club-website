@@ -74,12 +74,18 @@ export default function AdminNoticesPage() {
   };
 
   // 过滤公告
-  const filteredNotices = notices.filter((notice) => {
-    const matchSearch = notice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notice.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = selectedStatus === 'all' || notice.status === selectedStatus;
-    return matchSearch && matchStatus;
-  });
+  const filteredNotices = notices
+    .filter((notice) => {
+      const matchSearch = notice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        notice.category.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchStatus = selectedStatus === 'all' || notice.status === selectedStatus;
+      return matchSearch && matchStatus;
+    })
+    .sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return 0;
+    });
 
   if (isLoading || !user) {
     return (
@@ -215,7 +221,12 @@ export default function AdminNoticesPage() {
                       className="border-b border-[#283a4f] hover:bg-[#1f2d39] transition-colors"
                     >
                       <td className="px-6 py-4">
-                        <span className="font-medium text-white">{notice.title}</span>
+                        <div className="flex items-center gap-2">
+                          {notice.pinned && (
+                            <span className="material-symbols-outlined text-yellow-400 text-base" title="已置顶">push_pin</span>
+                          )}
+                          <span className="font-medium text-white">{notice.title}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-gray-400 text-sm">{notice.category}</span>

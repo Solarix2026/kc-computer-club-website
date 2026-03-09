@@ -38,6 +38,12 @@ export default function CreateNotice() {
   const [imageInputType, setImageInputType] = useState<'upload' | 'link'>('upload');
   const [newImageLink, setNewImageLink] = useState('');
 
+  // Instagram 导入
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [instagramImporting, setInstagramImporting] = useState(false);
+  const [instagramError, setInstagramError] = useState('');
+  const [instagramPreview, setInstagramPreview] = useState<{ image?: string | null; caption?: string; sourceUrl?: string } | null>(null);
+
   // 权限检查
   useEffect(() => {
     if (!isLoading && (!user || !('role' in user) || user.role !== 'admin')) {
@@ -148,6 +154,42 @@ export default function CreateNotice() {
     }));
   };
 
+  const handleImportInstagram = async () => {
+    if (!instagramUrl.trim()) return;
+    setInstagramImporting(true);
+    setInstagramError('');
+    setInstagramPreview(null);
+    try {
+      const res = await fetch('/api/notices/import-instagram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: instagramUrl.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setInstagramPreview({ image: data.image, caption: data.caption, sourceUrl: data.sourceUrl });
+      } else {
+        setInstagramError(data.error || '导入失败');
+      }
+    } catch {
+      setInstagramError('网络错误，请重试');
+    } finally {
+      setInstagramImporting(false);
+    }
+  };
+
+  const handleApplyInstagram = () => {
+    if (!instagramPreview) return;
+    if (instagramPreview.image && formData.images.length < 5) {
+      setFormData((prev) => ({ ...prev, images: [...prev.images, instagramPreview.image!] }));
+    }
+    if (instagramPreview.caption) {
+      setFormData((prev) => ({ ...prev, content: prev.content ? prev.content + '\n\n' + instagramPreview.caption : instagramPreview.caption! }));
+    }
+    setInstagramPreview(null);
+    setInstagramUrl('');
+  };
+
   if (isLoading || !user) {
     return (
       <AdminLayout adminName={user?.name || '管理员'}>
@@ -246,6 +288,70 @@ export default function CreateNotice() {
               <p className="text-gray-500 text-sm mt-2">
                 支持 Markdown 格式，包括标题、列表、链接等
               </p>
+            </div>
+
+            {/* Instagram 导入 */}
+            <div className="bg-[#1a2632] border border-[#e1306c]/30 rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs><linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="#f09433"/><stop offset="25%" stopColor="#e6683c"/><stop offset="50%" stopColor="#dc2743"/><stop offset="75%" stopColor="#cc2366"/><stop offset="100%" stopColor="#bc1888"/></linearGradient></defs>
+                  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#ig-grad)"/>
+                  <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="1.8" fill="none"/>
+                  <circle cx="17.5" cy="6.5" r="1.2" fill="white"/>
+                </svg>
+                <h3 className="text-white font-semibold">从 Instagram 导入</h3>
+              </div>
+              <p className="text-gray-500 text-sm mb-4">粘贴 Instagram 帖子链接，自动提取图片和说明文字</p>
+
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="url"
+                  value={instagramUrl}
+                  onChange={(e) => setInstagramUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleImportInstagram())}
+                  placeholder="https://www.instagram.com/p/..."
+                  className="flex-1 px-4 py-3 bg-[#141f2e] border border-[#283a4f] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#e1306c] text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleImportInstagram}
+                  disabled={instagramImporting || !instagramUrl.trim()}
+                  className="px-4 py-3 bg-gradient-to-r from-[#f09433] via-[#dc2743] to-[#bc1888] text-white rounded-lg font-medium disabled:opacity-50 transition-opacity text-sm whitespace-nowrap"
+                >
+                  {instagramImporting ? '导入中...' : '导入'}
+                </button>
+              </div>
+
+              {instagramError && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-sm mb-3">
+                  {instagramError}
+                </div>
+              )}
+
+              {instagramPreview && (
+                <div className="border border-[#e1306c]/30 rounded-xl p-4 space-y-3">
+                  <p className="text-[#e1306c] text-xs font-semibold uppercase tracking-wide">预览</p>
+                  {instagramPreview.image && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={instagramPreview.image}
+                      alt="Instagram 图片"
+                      className="w-full max-h-48 object-cover rounded-lg border border-[#283946]"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  )}
+                  {instagramPreview.caption && (
+                    <p className="text-gray-300 text-sm leading-relaxed line-clamp-4">{instagramPreview.caption}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleApplyInstagram}
+                    className="w-full py-2 bg-[#e1306c] hover:bg-[#c62a60] text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    应用到公告（添加图片 + 说明文字）
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 图片上传 */}

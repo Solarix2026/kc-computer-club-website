@@ -1,0 +1,139 @@
+/* eslint-disable prettier/prettier */
+/**
+ * POST /api/notices/import-instagram
+ * 从 Instagram 帖子链接提取图片和正文内容
+ * 支持 https://www.instagram.com/p/<shortcode>/ 和 /reel/ 格式
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+
+// 只允许合法的 Instagram 帖子/Reel URL，防止 SSRF
+const INSTAGRAM_POST_PATTERN = /^https:\/\/(www\.)?instagram\.com\/(p|reel)\/[A-Za-z0-9_-]+\/?(\?.*)?$/;
+
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#34;/g, '"')
+    .replace(/\\n/g, '\n');
+}
+
+function extractMeta(html: string, property: string): string | null {
+  // Try both attribute orderings: property first then content, and content first then property
+  const patterns = [
+    new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`, 'i'),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`, 'i'),
+    // Also try name= attribute (used by some)
+    new RegExp(`<meta[^>]+name=["']${property}["'][^>]+content=["']([^"']+)["']`, 'i'),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+name=["']${property}["']`, 'i'),
+  ];
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) return decodeHtmlEntities(match[1]);
+  }
+  return null;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { url } = body as { url?: string };
+
+    if (!url || typeof url !== 'string') {
+      return NextResponse.json({ success: false, error: '请提供 Instagram 帖子链接' }, { status: 400 });
+    }
+
+    const trimmedUrl = url.trim();
+
+    // Validate URL is a real Instagram post/reel — guards against SSRF
+    if (!INSTAGRAM_POST_PATTERN.test(trimmedUrl)) {
+      return NextResponse.json(
+        { success: false, error: '请输入有效的 Instagram 帖子链接（格式：https://www.instagram.com/p/...）' },
+        { status: 400 }
+      );
+    }
+
+    // Fetch the Instagram page server-side with browser-like headers
+    let html: string;
+    try {
+      const res = await fetch(trimmedUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+        },
+        // 10-second timeout
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          return NextResponse.json({ success: false, error: '找不到该 Instagram 帖子，请检查链接是否正确' }, { status: 404 });
+        }
+        if (res.status === 401 || res.status === 403) {
+          return NextResponse.json({ success: false, error: '该 Instagram 帖子需要登录才能查看（仅限私人账号）' }, { status: 403 });
+        }
+        return NextResponse.json({ success: false, error: `无法获取帖子内容（HTTP ${res.status}）` }, { status: 502 });
+      }
+
+      html = await res.text();
+    } catch (fetchErr: unknown) {
+      const err = fetchErr as { name?: string };
+      if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+        return NextResponse.json({ success: false, error: '获取 Instagram 内容超时，请重试' }, { status: 504 });
+      }
+      return NextResponse.json({ success: false, error: '无法连接到 Instagram，请检查网络' }, { status: 502 });
+    }
+
+    // Extract Open Graph meta tags
+    const image = extractMeta(html, 'og:image');
+    const rawDescription = extractMeta(html, 'og:description');
+    const rawTitle = extractMeta(html, 'og:title');
+
+    // og:description for Instagram looks like: "123 Likes, 5 Comments - @username on Instagram: \"caption text\""
+    // Extract just the caption after the colon
+    let caption = '';
+    if (rawDescription) {
+      const colonIdx = rawDescription.indexOf(': "');
+      if (colonIdx !== -1) {
+        caption = rawDescription.slice(colonIdx + 3).replace(/"\s*$/, '').trim();
+      } else {
+        caption = rawDescription.trim();
+      }
+    }
+
+    // Make title human-readable: strip likes/comments prefix if present
+    let title = '';
+    if (rawTitle) {
+      // Typical: "Photo by @username on Instagram" or "@username on Instagram: ..."
+      title = rawTitle.replace(/^Photo (shared )?by /, '').replace(/ on Instagram.*$/, '').trim();
+    }
+
+    if (!image && !caption) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Instagram 未返回帖子内容。该帖子可能是私人账号，或 Instagram 需要登录才能访问。请手动复制图片和说明文字。',
+        },
+        { status: 422 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      image: image ?? null,
+      caption,
+      title,
+      sourceUrl: trimmedUrl,
+    });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('[import-instagram] error:', error);
+    return NextResponse.json({ success: false, error: error.message || '导入失败' }, { status: 500 });
+  }
+}

@@ -169,7 +169,7 @@ export default function NoticesPage() {
               excerpt: (typeof notice.content === 'string' ? notice.content.substring(0, 150) + '...' : ''),
               imageUrl: imageUrl,
               tags: Array.isArray(notice.tags) ? notice.tags : (notice.tags && typeof notice.tags === 'string' ? JSON.parse(notice.tags) : []),
-              isPinned: false,
+              isPinned: !!(notice.pinned),
             };
           });
           setNotices(normalizedNotices);

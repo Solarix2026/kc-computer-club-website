@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
       { key: 'attendanceSession1Start', size: 256 },
       { key: 'attendanceSession2Start', size: 256 },
       { key: 'attendanceWeekStartDate', size: 256 },
-      { key: 'attendanceCode', size: 10 }, // 点名验证码（4位数字）
-      { key: 'attendanceCodeCreatedAt', size: 64 }, // 验证码创建时间（ISO 8601）
+      { key: 'attendanceCode1', size: 16 }, // 时段1验证码
+      { key: 'attendanceCode2', size: 16 }, // 时段2验证码
     ];
 
     const intAttrs = [
@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
       'attendanceDayOfWeek',
       'attendanceSession1Duration',
       'attendanceSession2Duration',
+      'attendanceCodesWeek',
     ];
 
     console.log(`\n正在创建属性...`);

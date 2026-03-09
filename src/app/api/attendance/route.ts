@@ -11,6 +11,9 @@ const APPWRITE_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '';
 const ATTENDANCE_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_ATTENDANCE_COLLECTION || 'attendance';
 const SETTINGS_COLLECTION_ID = 'clubSettings';
 const ATTENDANCE_CONFIG_DOC_ID = 'attendance_config';
+const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || '';
+const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '';
+const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || '';
 
 /**
  * 默认配置
@@ -23,6 +26,46 @@ const DEFAULT_CONFIG: AttendanceConfig = {
   session2Duration: 5,
   weekStartDate: '2026-01-06',
 };
+
+/**
+ * 当 Appwrite 集合缺少验证码相关属性时，自动创建它们
+ * 仅在 saveAttendanceConfigToDB 400 错误时调用一次
+ */
+async function ensureCodeAttributes(): Promise<void> {
+  const baseUrl = `${APPWRITE_ENDPOINT}/databases/${APPWRITE_DATABASE_ID}/collections/${SETTINGS_COLLECTION_ID}/attributes`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+    'X-Appwrite-Key': APPWRITE_API_KEY,
+  };
+
+  // 创建缺失的字符串属性
+  for (const key of ['attendanceCode1', 'attendanceCode2']) {
+    try {
+      await fetch(`${baseUrl}/string`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ key, size: 16, required: false }),
+        signal: AbortSignal.timeout(8000),
+      });
+    } catch { /* 可能已存在，忽略 */ }
+  }
+
+  // 创建缺失的整数属性
+  try {
+    await fetch(`${baseUrl}/integer`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ key: 'attendanceCodesWeek', required: false }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch { /* 可能已存在，忽略 */ }
+
+  // 固定等待 5 秒让 Appwrite 处理新属性
+  console.log('[ensureCodeAttributes] 等待 Appwrite 处理新属性（约 5 秒）...');
+  await new Promise(r => setTimeout(r, 5000));
+  console.log('[ensureCodeAttributes] 属性处理完成，准备重试写入');
+}
 
 /**
  * 生成随机点名验证码（4位数字）
@@ -99,34 +142,79 @@ async function saveAttendanceConfigToDB(
   if (attendanceCodesWeek !== undefined) updateData.attendanceCodesWeek = attendanceCodesWeek;
   if (codeEnabled !== undefined) updateData.attendanceCodeEnabled = codeEnabled;
 
+  const fullConfig = { ...DEFAULT_CONFIG, ...config };
+  const createData = {
+    attendanceDayOfWeek: fullConfig.dayOfWeek,
+    attendanceSession1Start: JSON.stringify(fullConfig.session1Start),
+    attendanceSession1Duration: fullConfig.session1Duration,
+    attendanceSession2Start: JSON.stringify(fullConfig.session2Start),
+    attendanceSession2Duration: fullConfig.session2Duration,
+    attendanceWeekStartDate: fullConfig.weekStartDate,
+    attendanceDebugMode: debugMode ?? false,
+    attendanceCode1: attendanceCode1 ?? null,
+    attendanceCode2: attendanceCode2 ?? null,
+    attendanceCodesWeek: attendanceCodesWeek ?? null,
+    attendanceCodeEnabled: codeEnabled ?? false,
+  };
+
+  const doUpdate = () => serverDatabases.updateDocument(
+    APPWRITE_DATABASE_ID,
+    SETTINGS_COLLECTION_ID,
+    ATTENDANCE_CONFIG_DOC_ID,
+    updateData
+  );
+  const doCreate = () => serverDatabases.createDocument(
+    APPWRITE_DATABASE_ID,
+    SETTINGS_COLLECTION_ID,
+    ATTENDANCE_CONFIG_DOC_ID,
+    createData
+  );
+
+  // 第一步：尝试更新
+  let needCreate = false;
   try {
-    await serverDatabases.updateDocument(
-      APPWRITE_DATABASE_ID,
-      SETTINGS_COLLECTION_ID,
-      ATTENDANCE_CONFIG_DOC_ID,
-      updateData
-    );
-  } catch (error: unknown) {
-    const err = error as { code?: number };
-    if (err.code === 404) {
-      // 创建新文档
-      const fullConfig = { ...DEFAULT_CONFIG, ...config };
-      await serverDatabases.createDocument(
-        APPWRITE_DATABASE_ID,
-        SETTINGS_COLLECTION_ID,
-        ATTENDANCE_CONFIG_DOC_ID,
-        {
-          attendanceDayOfWeek: fullConfig.dayOfWeek,
-          attendanceSession1Start: JSON.stringify(fullConfig.session1Start),
-          attendanceSession1Duration: fullConfig.session1Duration,
-          attendanceSession2Start: JSON.stringify(fullConfig.session2Start),
-          attendanceSession2Duration: fullConfig.session2Duration,
-          attendanceWeekStartDate: fullConfig.weekStartDate,
-          attendanceDebugMode: debugMode ?? false,
+    await doUpdate();
+    return;
+  } catch (e: unknown) {
+    const err = e as { code?: number; message?: string };
+    if (err.code === 400) {
+      // schema 缺少属性 —— 自动修复后重试
+      console.warn('[saveAttendanceConfigToDB] 400, 自动修复 schema...', err.message);
+      await ensureCodeAttributes();
+      try {
+        await doUpdate();
+        return;
+      } catch (retryErr: unknown) {
+        const re = retryErr as { code?: number };
+        if (re.code === 404) {
+          needCreate = true;
+        } else {
+          throw retryErr;
         }
-      );
+      }
+    } else if (err.code === 404) {
+      needCreate = true;
     } else {
-      throw error;
+      throw e;
+    }
+  }
+
+  // 第二步：创建文档（不存在时）
+  if (needCreate) {
+    try {
+      await doCreate();
+    } catch (ce: unknown) {
+      const cErr = ce as { code?: number };
+      if (cErr.code === 400) {
+        // schema 缺少属性，自动修复后重试 create
+        await ensureCodeAttributes();
+        await doCreate();
+      } else if (cErr.code === 409) {
+        // 文档并发创建—— 改为更新
+        await doUpdate();
+      } else {
+        throw ce;
+      }
     }
   }
 }
@@ -156,7 +244,12 @@ export async function GET(request: NextRequest) {
     if (dayOfWeek === config.dayOfWeek && currentHour >= config.session1Start.hour && attendanceCodesWeek !== weekNumber) {
       code1 = generateAttendanceCode();
       code2 = generateAttendanceCode();
-      await saveAttendanceConfigToDB({}, undefined, code1, code2, weekNumber, true);
+      try {
+        await saveAttendanceConfigToDB({}, undefined, code1, code2, weekNumber, true);
+      } catch (saveErr) {
+        console.error('[AttendanceAPI] 自动生成验证码保存失败（将在手动生成时重试）:', saveErr);
+        // 即使保存失败也继续返回内存中生成的 codes
+      }
     }
 
     // 获取调试/管理状态
